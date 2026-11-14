@@ -1,7 +1,25 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Prisma schema for the AI Study Workspace MVP.
+//
+// Implements the physical database contract from AGENT_IMPLEMENTATION_V2.md:
+// ten relational tables plus the read-only v_user_quiz_progress view.
+//
+// PostgreSQL-specific behaviour that Prisma cannot model lives in the
+// hand-reviewed SQL migration under prisma/migrations:
+//   * functional unique index on lower(email)
+//   * CHECK constraints (nonblank text, MIME type, file size, READY state,
+//     job lifecycle timestamps, question/option positions, attempt counters)
+//   * partial indexes (queued jobs, one active extraction per material, at most
+//     one correct option per question)
+//   * GENERATED STORED score_percent column
+//   * updated_at triggers on users, workspaces, materials, study_guides, quizzes
+//   * read-only v_user_quiz_progress view
+//
+// updated_at is intentionally NOT declared with @updatedAt: PostgreSQL triggers
+// own those columns, so there is exactly one writer.
+//
+// Because score_percent is a generated column, Prisma reports expected drift in
+// `prisma migrate dev`. Apply migrations with `prisma migrate deploy` (CI/prod)
+// and add new migrations by hand or with `prisma migrate diff`.
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +28,192 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum MaterialProcessingStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+
+  @@map("material_processing_status")
+}
+
+enum ProcessingJobType {
+  EXTRACT_TEXT
+  GENERATE_GUIDE
+  GENERATE_QUIZ
+
+  @@map("processing_job_type")
+}
+
+enum ProcessingJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+
+  @@map("processing_job_status")
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @db.VarChar(320)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  workspaces Workspace[]
+  attempts   QuizAttempt[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId String   @map("owner_user_id") @db.Uuid
+  name        String   @db.VarChar(120)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  owner     User       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  materials Material[]
+
+  @@index([ownerUserId, createdAt(sort: Desc)])
+  @@map("workspaces")
+}
+
+model Material {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId      String                   @map("workspace_id") @db.Uuid
+  originalFilename String                   @map("original_filename") @db.VarChar(255)
+  displayName      String                   @map("display_name") @db.VarChar(255)
+  mimeType         String                   @map("mime_type") @db.VarChar(100)
+  sizeBytes        BigInt                   @map("size_bytes")
+  storageKey       String                   @unique @map("storage_key")
+  extractedTextKey String?                  @unique @map("extracted_text_key")
+  processingStatus MaterialProcessingStatus @default(UPLOADED) @map("processing_status")
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  processingJobs ProcessingJob[]
+  studyGuides    StudyGuide[]
+  quizzes        Quiz[]
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@map("materials")
+}
+
+model ProcessingJob {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  materialId   String              @map("material_id") @db.Uuid
+  jobType      ProcessingJobType   @map("job_type")
+  status       ProcessingJobStatus @default(QUEUED)
+  errorMessage String?             @map("error_message")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  startedAt    DateTime?           @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime?           @map("finished_at") @db.Timestamptz(6)
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([materialId, createdAt(sort: Desc)])
+  @@map("processing_jobs")
+}
+
+model StudyGuide {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  materialId  String   @map("material_id") @db.Uuid
+  displayName String   @map("display_name") @db.VarChar(255)
+  storageKey  String   @unique @map("storage_key")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([materialId, createdAt(sort: Desc)])
+  @@map("study_guides")
+}
+
+model Quiz {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  materialId  String   @map("material_id") @db.Uuid
+  displayName String   @map("display_name") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  material  Material       @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([materialId, createdAt(sort: Desc)])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quizId      String  @map("quiz_id") @db.Uuid
+  position    Int
+  prompt      String
+  explanation String?
+
+  quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  options QuestionOption[]
+  answers QuizAttemptAnswer[]
+
+  @@unique([quizId, position])
+  @@unique([id, quizId])
+  @@map("quiz_questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  questionId String  @map("question_id") @db.Uuid
+  position   Int
+  optionText String  @map("option_text")
+  isCorrect  Boolean @default(false) @map("is_correct")
+
+  question QuizQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  answers  QuizAttemptAnswer[]
+
+  @@unique([questionId, position])
+  @@unique([questionId, id])
+  @@map("question_options")
+}
+
+model QuizAttempt {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quizId         String   @map("quiz_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  submittedAt    DateTime @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  totalQuestions Int      @map("total_questions")
+  correctAnswers Int      @map("correct_answers")
+  // GENERATED ALWAYS AS (...) STORED in PostgreSQL. Modelled as Decimal with a
+  // dbgenerated default so Prisma can read the computed grade; the database
+  // still rejects any INSERT/UPDATE that supplies a value.
+  scorePercent   Decimal  @default(dbgenerated("0")) @map("score_percent") @db.Decimal(5, 2)
+
+  quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  user    User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  answers QuizAttemptAnswer[]
+
+  @@unique([id, quizId])
+  @@index([userId, submittedAt(sort: Desc)])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  attemptId        String  @map("attempt_id") @db.Uuid
+  quizId           String  @map("quiz_id") @db.Uuid
+  questionId       String  @map("question_id") @db.Uuid
+  selectedOptionId String  @map("selected_option_id") @db.Uuid
+  isCorrect        Boolean @map("is_correct")
+
+  attempt  QuizAttempt    @relation(fields: [attemptId, quizId], references: [id, quizId], onDelete: Cascade, onUpdate: NoAction)
+  question QuizQuestion   @relation(fields: [questionId, quizId], references: [id, quizId], onDelete: Restrict, onUpdate: NoAction)
+  option   QuestionOption @relation(fields: [selectedOptionId, questionId], references: [id, questionId], onDelete: Restrict, onUpdate: NoAction)
+
+  @@id([attemptId, questionId])
+  @@map("quiz_attempt_answers")
 }
