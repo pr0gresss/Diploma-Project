@@ -43,4 +43,7 @@ See `Frontend/README.md` for details.
 
 ## Documentation
 
-Project notes live in `Documentation/`, including `AGENT_IMPLEMENTATION.md`.
+- `Documentation/DATABASE.md` — database design, data dictionary, logical schema,
+  integrity rules, migrations, test data, and roles.
+- `Backend/prisma/migrations/` — authoritative, versioned DDL.
+- `Backend/prisma/seed.sql` — deterministic test data.

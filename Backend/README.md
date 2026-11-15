@@ -16,7 +16,9 @@ src/
 └── generated/prisma/ # Prisma Client output (git-ignored)
 prisma/
 ├── schema.prisma     # data model (10 tables, 3 enums)
-└── migrations/       # hand-reviewed SQL migrations
+├── migrations/       # hand-reviewed SQL migrations (init + roles/grants)
+├── seed.sql          # deterministic test data
+└── README.md
 prisma7.config.ts     # Prisma CLI config (schema, migrations, datasource)
 ```
 
@@ -49,8 +51,9 @@ Run from this folder:
 
 ## Database
 
-The schema implements the database contract in `AGENT_IMPLEMENTATION_V2.md`: exactly
-ten relational tables plus the read-only `v_user_quiz_progress` view. There is no
+The schema is documented in [`../Documentation/DATABASE.md`](../Documentation/DATABASE.md):
+data dictionary, logical schema, integrity rules, migrations, test data and roles. It has
+exactly ten relational tables plus the read-only `v_user_quiz_progress` view. There is no
 `material_contents` table — generated Markdown lives in private R2 storage and the
 database stores only object keys and metadata.
 
@@ -97,6 +100,21 @@ npm run prisma:migrate
 cannot model generated columns; use `prisma migrate deploy` (or `prisma migrate
 diff`) and author new migrations deliberately instead. Always run
 `npm run prisma:generate` after changing `schema.prisma`.
+
+### Roles and test data
+
+The schema migration creates 10 tables and the progress view; a second migration creates
+the `app_read`, `app_write` and `admin` roles and grants least-privilege access. The
+NestJS runtime connects as a login that inherits `app_write`, never as `postgres`.
+
+Load the deterministic fixtures (all statuses, size boundaries, multiple attempts) with:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/seed.sql
+```
+
+See [`../Documentation/DATABASE.md`](../Documentation/DATABASE.md) for the full data
+dictionary, role setup and test-data inventory.
 
 ### Case-insensitive e-mail
 

@@ -1,7 +1,8 @@
 // Prisma schema for the AI Study Workspace MVP.
 //
-// Implements the physical database contract from AGENT_IMPLEMENTATION_V2.md:
-// ten relational tables plus the read-only v_user_quiz_progress view.
+// Implements the physical database contract documented in
+// ../Documentation/DATABASE.md: ten relational tables plus the read-only
+// v_user_quiz_progress view, the three application roles and the seed fixtures.
 //
 // PostgreSQL-specific behaviour that Prisma cannot model lives in the
 // hand-reviewed SQL migration under prisma/migrations:

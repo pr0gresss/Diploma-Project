@@ -53,3 +53,15 @@ ORDER BY last_completed_at DESC;
 
 `average_score_percent` is `NUMERIC` (from `AVG(numeric)`), while
 `best_score_percent` and `latest_score_percent` are `NUMERIC(5,2)`.
+
+## Roles, seed data and documentation
+
+- `migrations/20261115120000_roles_and_privileges/` creates the `app_read`,
+  `app_write` and `admin` roles, grants least-privilege access, sets default
+  privileges for future objects and enables `pgcrypto`.
+- `seed.sql` loads deterministic fixtures with fixed UUIDs; it is idempotent and
+  runs in one transaction:
+  `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/seed.sql`.
+- The data dictionary, logical schema, integrity rules, transaction patterns and
+  access-control setup are in
+  [`../../Documentation/DATABASE.md`](../../Documentation/DATABASE.md).
