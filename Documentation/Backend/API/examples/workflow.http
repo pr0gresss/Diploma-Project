@@ -1,0 +1,45 @@
+@baseUrl = http://localhost:3000
+### Set accessToken, workspaceId, materialId and quizId in a private REST-client environment.
+
+### Public registration — 201; duplicate email — 409
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{"email":"student@example.com","password":"StrongStudyPassword!2026"}
+
+### Public sign-in — 200; wrong credentials — 401
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{"email":"student@example.com","password":"StrongStudyPassword!2026"}
+
+### Current profile — 200
+GET {{baseUrl}}/me
+Authorization: Bearer {{accessToken}}
+
+### Create a workspace — 201
+POST {{baseUrl}}/workspaces
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{"name":"Database systems"}
+
+### Paginated workspace list — 200
+GET {{baseUrl}}/workspaces?limit=20&offset=0&search=Database
+Authorization: Bearer {{accessToken}}
+
+### Read upload processing jobs — 200
+GET {{baseUrl}}/materials/{{materialId}}/jobs
+Authorization: Bearer {{accessToken}}
+
+### Retrieve a quiz without answer keys — 200
+GET {{baseUrl}}/quizzes/{{quizId}}
+Authorization: Bearer {{accessToken}}
+
+### Overall progress — 200
+GET {{baseUrl}}/me/progress
+Authorization: Bearer {{accessToken}}
+
+### Invalid pagination — 400
+GET {{baseUrl}}/workspaces?limit=0
+Authorization: Bearer {{accessToken}}

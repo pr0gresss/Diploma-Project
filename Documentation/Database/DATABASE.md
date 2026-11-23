@@ -3,10 +3,46 @@
 Database design, data dictionary, integrity rules, deployment, test data, and access
 control for the AI Study Workspace diploma project.
 
+## Current schema revision: typed quizzes (23 November 2026)
+
+Migration [`20261123120000_question_types_and_selections`](../../Backend/prisma/migrations/20261123120000_question_types_and_selections/migration.sql)
+extends the original schema documented in Sections 1–15 below. Where those
+baseline sections describe single-answer-only quizzes, this revision supersedes
+them. The current schema has **11 tables and 4 enums**.
+
+- `quiz_questions.question_type` uses `quiz_question_type`:
+  `SINGLE_CHOICE`, `SELECT`, `MULTI_SELECT`. Existing questions default to
+  `SINGLE_CHOICE`, without changing their content or timestamps.
+- `quiz_attempt_answer_selections` is the authoritative normalized selection
+  table. Its composite primary key is
+  `(attempt_id, question_id, selected_option_id)`. Composite foreign keys bind
+  each selection to its per-question answer and an option of the same question.
+- Existing answer selections are backfilled. The old parent
+  `quiz_attempt_answers.selected_option_id` remains as a first-option compatibility
+  mirror, **not the complete answer for multi-select**.
+- Deferred constraint triggers replace the old one-correct-option unique index:
+  radio/dropdown questions require exactly one correct option; multi-select
+  questions require one or more. All questions require 2–10 options.
+- Deferred selection checks enforce a nonempty distinct set, exactly one for
+  radio/dropdown questions, a valid compatibility mirror, and exact-set answer
+  correctness. Grading awards one point per completely correct question, with
+  no partial credit. The generated percentage column remains unchanged.
+- Selection rows reject updates and have explicit least-privilege grants.
+- A partial unique index allows at most one queued/running `GENERATE_QUIZ` job
+  per material. Validated generated quizzes and job success are committed
+  together; provider calls stay outside transactions.
+
+The applied local migration preserved 3 quizzes, 4 attempts and 11 answers and
+backfilled 11 selection rows. The checksum of stored grades was unchanged.
+This describes the verification dataset, not a fixed production row count.
+
+For the API/OAuth flow and compatibility fields, see
+[`OPENAI_OAUTH.md`](../Backend/AI/OPENAI_OAUTH.md).
+
 - **DBMS:** PostgreSQL 17
-- **Schema source of truth:** [`Backend/prisma/schema.prisma`](../Backend/prisma/schema.prisma)
-- **DDL:** versioned Prisma SQL migrations in [`Backend/prisma/migrations/`](../Backend/prisma/migrations/) — this document links to them instead of duplicating the DDL
-- **Test data:** [`Backend/prisma/seed.sql`](../Backend/prisma/seed.sql)
+- **Schema source of truth:** [`Backend/prisma/schema.prisma`](../../Backend/prisma/schema.prisma)
+- **DDL:** versioned Prisma SQL migrations in [`Backend/prisma/migrations/`](../../Backend/prisma/migrations) — this document links to them instead of duplicating the DDL
+- **Test data:** [`Backend/prisma/seed.sql`](../../Backend/prisma/seed.sql)
 
 ---
 
@@ -921,10 +957,10 @@ is:
 
 | Migration | Contents |
 | --- | --- |
-| [`20261114121500_init/migration.sql`](../Backend/prisma/migrations/20261114121500_init/migration.sql) | Schema, 3 enum types, 10 tables, 1 view, keys, indexes, `CHECK` constraints, triggers, generated column |
-| [`20261115120000_roles_and_privileges/migration.sql`](../Backend/prisma/migrations/20261115120000_roles_and_privileges/migration.sql) | `app_read` / `app_write` / `admin` roles, least-privilege grants, default privileges, `pgcrypto` |
+| [`20261114121500_init/migration.sql`](../../Backend/prisma/migrations/20261114121500_init/migration.sql) | Schema, 3 enum types, 10 tables, 1 view, keys, indexes, `CHECK` constraints, triggers, generated column |
+| [`20261115120000_roles_and_privileges/migration.sql`](../../Backend/prisma/migrations/20261115120000_roles_and_privileges/migration.sql) | `app_read` / `app_write` / `admin` roles, least-privilege grants, default privileges, `pgcrypto` |
 
-Migration lock: [`migration_lock.toml`](../Backend/prisma/migrations/migration_lock.toml)
+Migration lock: [`migration_lock.toml`](../../Backend/prisma/migrations/migration_lock.toml)
 (`provider = "postgresql"`).
 
 ### 10.2 Applying migrations
@@ -968,7 +1004,7 @@ the NestJS runtime connects as a non-superuser login that inherits `app_write`
 
 ### 11.1 Seed script
 
-[`Backend/prisma/seed.sql`](../Backend/prisma/seed.sql) loads deterministic fixtures in a
+[`Backend/prisma/seed.sql`](../../Backend/prisma/seed.sql) loads deterministic fixtures in a
 single transaction and is idempotent (fixed UUIDs + `ON CONFLICT DO NOTHING`).
 
 ```bash
@@ -1036,7 +1072,7 @@ Never run `migrate reset` against shared or production data.
 ### 12.1 Role model
 
 The roles are created by
-[`20261115120000_roles_and_privileges/migration.sql`](../Backend/prisma/migrations/20261115120000_roles_and_privileges/migration.sql).
+[`20261115120000_roles_and_privileges/migration.sql`](../../Backend/prisma/migrations/20261115120000_roles_and_privileges/migration.sql).
 They are `NOLOGIN` group roles; login accounts are separate and inherit them.
 
 | Role | Login | Privileges | Intended use |

@@ -1,0 +1,17 @@
+### Use with a REST client supporting .http files.
+### Set accessToken as a private client/environment variable; do not commit it.
+@baseUrl = http://localhost:3000
+
+### Authenticated greeting: 200, text/html body "Hello World!"
+GET {{baseUrl}}/
+Authorization: Bearer {{accessToken}}
+
+### Missing Authorization header: 401, errorCode missing_credentials
+GET {{baseUrl}}/
+
+### Malformed token: 401, message "malformed token"
+GET {{baseUrl}}/
+Authorization: Bearer not-a-jwt
+
+### Undocumented/unimplemented route: 404, not a login operation
+GET {{baseUrl}}/does-not-exist

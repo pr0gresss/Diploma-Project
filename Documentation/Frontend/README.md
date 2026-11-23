@@ -19,7 +19,7 @@ src/
 
 ## Commands
 
-Run from this folder:
+Run from the repository's `Frontend/` folder:
 
 | Command | Description |
 | --- | --- |

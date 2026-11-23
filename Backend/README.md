@@ -1,140 +1,75 @@
-# Backend — NestJS API
+# Start the backend
 
-NestJS 12 REST API with Prisma 7 and PostgreSQL, part of the AI Study Workspace monorepo.
+Requires Node.js 24+, npm 12, PostgreSQL, and Docker Compose if using the containers below.
+Run these commands from the repository root in PowerShell.
 
-## Structure
+## Run locally
 
-```
-src/
-├── app.module.ts     # root module (ConfigModule + PrismaModule)
-├── app.controller.ts
-├── app.service.ts
-├── main.ts           # bootstrap
-├── prisma/
-│   ├── prisma.module.ts
-│   └── prisma.service.ts
-└── generated/prisma/ # Prisma Client output (git-ignored)
-prisma/
-├── schema.prisma     # data model (10 tables, 3 enums)
-├── migrations/       # hand-reviewed SQL migrations (init + roles/grants)
-├── seed.sql          # deterministic test data
-└── README.md
-prisma7.config.ts     # Prisma CLI config (schema, migrations, datasource)
-```
+1. Install dependencies and create the local configuration:
 
-## Setup
+   ```powershell
+   cd Backend
+   npm ci
+   Copy-Item .env.example .env
+   ```
 
-From this folder:
+2. Edit `.env`: set `DATABASE_URL` and a random `JWT_SECRET` of at least 32 characters.
+   Keep `STORAGE_DRIVER=local` for local files, or configure R2 using the
+   [storage guide](../Documentation/Backend/Storage/R2_SETUP.md).
+   Keep an existing configured `.env` instead of overwriting it.
 
-```bash
-npm install
-cp .env.example .env        # then set DATABASE_URL
-docker compose up -d db     # optional: local PostgreSQL
-```
+3. Start PostgreSQL if you do not already have a database:
 
-## Commands
+   ```powershell
+   docker compose up -d db
+   ```
 
-Run from this folder:
+   The backend Compose file exposes PostgreSQL on port 5432. Skip this command
+   if another database is already using that port, and point `DATABASE_URL` at it.
 
-| Command | Description |
-| --- | --- |
-| `npm run start:dev` | Watch mode on http://localhost:3000 |
-| `npm run build` | Compile to `dist/` |
-| `npm run start:prod` | Run the compiled app |
-| `npm run lint` | oxlint (type-aware) |
-| `npm test` | Vitest unit tests |
-| `npm run test:e2e` | Vitest e2e tests |
-| `npm run prisma:generate` | Regenerate the Prisma client |
-| `npm run prisma:migrate` | Apply pending migrations (`prisma migrate deploy`) |
-| `npm run prisma:migrate:status` | Show applied/pending migration status |
-| `npm run prisma:studio` | Open Prisma Studio |
+4. Start Tika if it is not already available:
 
-## Database
+   ```powershell
+   docker run -d --name study-tika -p 127.0.0.1:9998:9998 apache/tika:latest-full
+   ```
 
-The schema is documented in [`../Documentation/DATABASE.md`](../Documentation/DATABASE.md):
-data dictionary, logical schema, integrity rules, migrations, test data and roles. It has
-exactly ten relational tables plus the read-only `v_user_quiz_progress` view. There is no
-`material_contents` table — generated Markdown lives in private R2 storage and the
-database stores only object keys and metadata.
+   Set `TIKA_URL=http://127.0.0.1:9998` in `.env`. Without `TIKA_URL`,
+   uploaded documents stay queued for extraction.
 
-| Table | Purpose |
-| --- | --- |
-| `users` | Accounts; `email` is unique case-insensitively |
-| `workspaces` | A user's material collection |
-| `materials` | Uploaded PDF/DOCX metadata and extraction status |
-| `processing_jobs` | PostgreSQL-persisted queue (no Redis/BullMQ) |
-| `study_guides` | Generated study-guide objects (R2 key only) |
-| `quizzes` | Generated quiz metadata |
-| `quiz_questions` | Ordered prompts; immutable once written |
-| `question_options` | Ordered choices; at most one correct per question |
-| `quiz_attempts` | Submitted attempts; grade is a generated column |
-| `quiz_attempt_answers` | Per-question answers for an attempt |
+5. Generate Prisma, apply migrations, and start the backend:
 
-`v_user_quiz_progress` aggregates attempts per user and quiz (completed attempts,
-average/best/latest score, workspace, last completion).
+   ```powershell
+   npm run prisma:generate
+   npm run prisma:migrate:deploy
+   npm run start:dev
+   ```
 
-Behaviour enforced by PostgreSQL rather than Prisma:
+Backend: http://localhost:3000. Swagger UI: http://localhost:3000/docs/.
+Restart the backend after changing `.env`.
 
-- `score_percent` is `GENERATED ALWAYS AS (...) STORED` and rejects direct writes.
-- `updated_at` is set by triggers on `users`, `workspaces`, `materials`,
-  `study_guides` and `quizzes`; it is deliberately not Prisma `@updatedAt`.
-- CHECK constraints cover non-blank text, allowed MIME types, 1 B–10 MiB sizes,
-  `READY` requiring extracted text, job lifecycle timestamps, positive positions
-  and attempt counters.
-- Partial indexes keep one active extraction job per material and one correct
-  option per question, and index queued jobs for claiming.
-- `quiz_questions`, `question_options`, `quiz_attempts` and
-  `quiz_attempt_answers` reject `UPDATE`.
-- Deleting a quiz, material, workspace or user with attempt history is restricted;
-  deleting an attempt cascades its answers.
+To run the compiled backend:
 
-### Migrations
-
-Migrations are committed as reviewed SQL. Apply them with:
-
-```bash
-npm run prisma:migrate
+```powershell
+npm run build
+npm run start:prod
 ```
 
-`prisma migrate dev` reports expected drift for `score_percent` because Prisma
-cannot model generated columns; use `prisma migrate deploy` (or `prisma migrate
-diff`) and author new migrations deliberately instead. Always run
-`npm run prisma:generate` after changing `schema.prisma`.
+## Run the complete project in Docker
 
-### Roles and test data
+From the repository root:
 
-The schema migration creates 10 tables and the progress view; a second migration creates
-the `app_read`, `app_write` and `admin` roles and grants least-privilege access. The
-NestJS runtime connects as a login that inherits `app_write`, never as `postgres`.
-
-Load the deterministic fixtures (all statuses, size boundaries, multiple attempts) with:
-
-```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/seed.sql
+```powershell
+Copy-Item CI/.env.example CI/.env
+# Edit CI/.env: set POSTGRES_PASSWORD, JWT_SECRET, and storage settings.
+docker compose --env-file CI/.env up --build -d
+docker compose --env-file CI/.env ps
 ```
 
-See [`../Documentation/DATABASE.md`](../Documentation/DATABASE.md) for the full data
-dictionary, role setup and test-data inventory.
+Frontend: http://localhost:8080. Backend: http://localhost:3000.
+The stack configures PostgreSQL, migrations, and Tika automatically.
+For operations and demo data, see the [deployment guide](../Documentation/Deployment/README.md).
 
-### Case-insensitive e-mail
-
-`schema.prisma` cannot express the functional unique index on `lower(email)`, so
-`User.email` is not declared `@unique`. Authentication code must look users up
-case-insensitively, for example:
-
-```ts
-prisma.user.findFirst({ where: { email: { equals: input, mode: 'insensitive' } } });
-```
-
-A duplicate address in any casing still fails with Prisma `P2002`.
-
-## Environment
-
-See `.env.example`:
-
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string |
-| `PORT` | no | HTTP port (default `3000`) |
-
-Configuration is loaded by `@nestjs/config` from `.env` in this folder. The Prisma client uses the `@prisma/adapter-pg` driver adapter and is injected through the global `PrismaModule`.
+All other documentation is in the [documentation index](../Documentation/README.md),
+including the [backend reference](../Documentation/Backend/README.md),
+[database guides](../Documentation/Database/README.md), and
+[frontend setup](../Documentation/Frontend/README.md).

@@ -15,6 +15,10 @@ coverage/
 # Prisma generated client
 /src/generated/prisma
 
+# Private object storage (uploads, extracted text, study guides)
+.storage/
+.secrets/
+
 # Logs
 logs/
 *.log

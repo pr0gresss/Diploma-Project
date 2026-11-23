@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HttpErrorResponse",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Human-readable failure description; clients should not parse it.",
+      "example": "Unauthorized"
+    },
+    "statusCode": {
+      "type": "integer",
+      "description": "HTTP response status.",
+      "example": 401,
+      "minimum": 400,
+      "maximum": 599
+    },
+    "error": {
+      "type": "string",
+      "description": "Optional HTTP error description, present for invalid tokens.",
+      "example": "Unauthorized"
+    },
+    "errorCode": {
+      "type": "string",
+      "description": "Optional machine-readable error code. Missing credentials use missing_credentials.",
+      "example": "missing_credentials"
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional sanitized business-validation details."
+    }
+  },
+  "required": [
+    "message",
+    "statusCode"
+  ]
+}

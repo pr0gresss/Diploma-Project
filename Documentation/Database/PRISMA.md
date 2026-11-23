@@ -20,9 +20,9 @@ reset the database.
 
 ## Model notes
 
-- **10 tables**: `users`, `workspaces`, `materials`, `processing_jobs`,
+- **11 tables**: `users`, `workspaces`, `materials`, `processing_jobs`,
   `study_guides`, `quizzes`, `quiz_questions`, `question_options`,
-  `quiz_attempts`, `quiz_attempt_answers`.
+  `quiz_attempts`, `quiz_attempt_answers`, `quiz_attempt_answer_selections`.
 - **`v_user_quiz_progress`** is a read-only view. Query it with raw SQL through
   Prisma (`$queryRaw`) or from reporting code; it has no Prisma model.
 - **`materials.processing_status`** tracks extraction only. AI generation
@@ -64,4 +64,4 @@ ORDER BY last_completed_at DESC;
   `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/seed.sql`.
 - The data dictionary, logical schema, integrity rules, transaction patterns and
   access-control setup are in
-  [`../../Documentation/DATABASE.md`](../../Documentation/DATABASE.md).
+  [Database design](DATABASE.md).

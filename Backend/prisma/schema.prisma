@@ -1,7 +1,7 @@
 // Prisma schema for the AI Study Workspace MVP.
 //
 // Implements the physical database contract documented in
-// ../Documentation/DATABASE.md: ten relational tables plus the read-only
+// ../Documentation/DATABASE.md: eleven relational tables plus the read-only
 // v_user_quiz_progress view, the three application roles and the seed fixtures.
 //
 // PostgreSQL-specific behaviour that Prisma cannot model lives in the
@@ -9,8 +9,8 @@
 //   * functional unique index on lower(email)
 //   * CHECK constraints (nonblank text, MIME type, file size, READY state,
 //     job lifecycle timestamps, question/option positions, attempt counters)
-//   * partial indexes (queued jobs, one active extraction per material, at most
-//     one correct option per question)
+//   * partial indexes (queued jobs and one active extraction/generation per material)
+//   * deferred correctness/cardinality checks for typed questions and selections
 //   * GENERATED STORED score_percent column
 //   * updated_at triggers on users, workspaces, materials, study_guides, quizzes
 //   * read-only v_user_quiz_progress view
@@ -57,6 +57,14 @@ enum ProcessingJobStatus {
   @@map("processing_job_status")
 }
 
+enum QuizQuestionType {
+  SINGLE_CHOICE
+  SELECT
+  MULTI_SELECT
+
+  @@map("quiz_question_type")
+}
+
 model User {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String   @db.VarChar(320)
@@ -93,6 +101,7 @@ model Material {
   sizeBytes        BigInt                   @map("size_bytes")
   storageKey       String                   @unique @map("storage_key")
   extractedTextKey String?                  @unique @map("extracted_text_key")
+  extractedText    String?                  @map("extracted_text") @db.Text
   processingStatus MaterialProcessingStatus @default(UPLOADED) @map("processing_status")
   createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -157,6 +166,7 @@ model QuizQuestion {
   position    Int
   prompt      String
   explanation String?
+  questionType QuizQuestionType @default(SINGLE_CHOICE) @map("question_type")
 
   quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   options QuestionOption[]
@@ -176,6 +186,7 @@ model QuestionOption {
 
   question QuizQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   answers  QuizAttemptAnswer[]
+  selections QuizAttemptAnswerSelection[]
 
   @@unique([questionId, position])
   @@unique([questionId, id])
@@ -214,7 +225,22 @@ model QuizAttemptAnswer {
   attempt  QuizAttempt    @relation(fields: [attemptId, quizId], references: [id, quizId], onDelete: Cascade, onUpdate: NoAction)
   question QuizQuestion   @relation(fields: [questionId, quizId], references: [id, quizId], onDelete: Restrict, onUpdate: NoAction)
   option   QuestionOption @relation(fields: [selectedOptionId, questionId], references: [id, questionId], onDelete: Restrict, onUpdate: NoAction)
+  selections QuizAttemptAnswerSelection[]
 
   @@id([attemptId, questionId])
   @@map("quiz_attempt_answers")
+}
+
+// Normalized authoritative selections. The parent's selected_option_id is kept
+// as the first selection for migration/backward database compatibility only.
+model QuizAttemptAnswerSelection {
+  attemptId String @map("attempt_id") @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  selectedOptionId String @map("selected_option_id") @db.Uuid
+
+  answer QuizAttemptAnswer @relation(fields: [attemptId, questionId], references: [attemptId, questionId], onDelete: Cascade, onUpdate: NoAction)
+  option QuestionOption @relation(fields: [questionId, selectedOptionId], references: [questionId, id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@id([attemptId, questionId, selectedOptionId])
+  @@map("quiz_attempt_answer_selections")
 }

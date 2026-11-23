@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/dist
+**/coverage
+**/.angular
+**/.storage
+**/.secrets
+**/.env
+**/.env.*
+**/*.log
+**/*.tsbuildinfo
+**/.idea
+**/.vscode
+Backend/src/generated
+Documentation

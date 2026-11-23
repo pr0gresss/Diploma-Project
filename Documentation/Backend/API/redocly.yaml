@@ -1,0 +1,11 @@
+extends:
+  - recommended
+
+apis:
+  workspace:
+    root: ./reference/openapi.json
+
+rules:
+  # This private university project has no declared API redistribution license.
+  # Do not invent an SPDX license to satisfy a documentation warning.
+  info-license: off

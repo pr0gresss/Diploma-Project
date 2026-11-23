@@ -1,0 +1,17 @@
+{
+  "success": "Hello World!",
+  "missingCredentials": {
+    "message": "Unauthorized",
+    "statusCode": 401,
+    "errorCode": "missing_credentials"
+  },
+  "malformedToken": {
+    "message": "malformed token",
+    "error": "Unauthorized",
+    "statusCode": 401
+  },
+  "internalError": {
+    "statusCode": 500,
+    "message": "Internal server error"
+  }
+}

@@ -279,4 +279,9 @@ VALUES
      'c5000000-0000-4000-8000-000000000007', 'c6000000-0000-4000-8000-000000000019', false)
 ON CONFLICT DO NOTHING;
 
+-- Normalize seeded single-answer selections too (idempotent).
+INSERT INTO quiz_attempt_answer_selections (attempt_id, question_id, selected_option_id)
+SELECT attempt_id, question_id, selected_option_id FROM quiz_attempt_answers
+ON CONFLICT DO NOTHING;
+
 COMMIT;
