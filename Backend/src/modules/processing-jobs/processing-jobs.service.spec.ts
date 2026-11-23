@@ -20,7 +20,10 @@ describe('ProcessingJobsService', () => {
     completeExtraction: ReturnType<typeof vi.fn>;
     failExtraction: ReturnType<typeof vi.fn>;
   };
-  let storage: { put: ReturnType<typeof vi.fn> };
+  let storage: {
+    put: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
   let service: ProcessingJobsService;
   const job = {
     id: 'job',
@@ -38,7 +41,7 @@ describe('ProcessingJobsService', () => {
       completeExtraction: vi.fn().mockResolvedValue(job),
       failExtraction: vi.fn().mockResolvedValue(job),
     };
-    storage = { put: vi.fn() };
+    storage = { put: vi.fn(), delete: vi.fn() };
     service = new ProcessingJobsService(
       repository as unknown as ProcessingJobsRepository,
       storage as unknown as ObjectStorage,
@@ -73,6 +76,32 @@ describe('ProcessingJobsService', () => {
     expect(storage.put.mock.invocationCallOrder[0]).toBeLessThan(
       repository.completeExtraction.mock.invocationCallOrder[0],
     );
+  });
+  it('removes unpublished text when deletion races publication', async () => {
+    repository.findById.mockResolvedValueOnce(job).mockResolvedValueOnce(null);
+    repository.completeExtraction.mockRejectedValue(new Error('Job deleted'));
+    await expect(service.completeExtraction('job', 'Text')).rejects.toThrow(
+      'Job deleted',
+    );
+    expect(storage.delete).toHaveBeenCalledWith(storage.put.mock.calls[0][0]);
+  });
+  it('reconciles an upload whose response was lost before publication', async () => {
+    storage.put.mockRejectedValue(new Error('Upload response lost'));
+    await expect(service.completeExtraction('job', 'Text')).rejects.toThrow(
+      'Upload response lost',
+    );
+    expect(storage.delete).toHaveBeenCalledWith(storage.put.mock.calls[0][0]);
+    expect(repository.completeExtraction).not.toHaveBeenCalled();
+  });
+  it('keeps output when the commit succeeded but its response was lost', async () => {
+    repository.findById
+      .mockResolvedValueOnce(job)
+      .mockResolvedValueOnce({ ...job, status: 'SUCCEEDED' });
+    repository.completeExtraction.mockRejectedValue(new Error('Response lost'));
+    await expect(
+      service.completeExtraction('job', 'Text'),
+    ).resolves.toMatchObject({ status: 'SUCCEEDED' });
+    expect(storage.delete).not.toHaveBeenCalled();
   });
   it.each([
     [null, NotFoundError],

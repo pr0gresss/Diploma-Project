@@ -30,6 +30,30 @@ interface ClaimedJobRow {
 export class ProcessingJobsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Expire interrupted work; new attempts receive new job IDs and object keys. */
+  async recoverStaleJobs(): Promise<number> {
+    return this.prisma.$transaction(async (transaction) => {
+      const expired = await transaction.$queryRaw<
+        Array<{ materialId: string; jobType: string }>
+      >`
+        UPDATE processing_jobs
+        SET status = 'FAILED', finished_at = now(),
+            error_message = 'Processing interrupted or exceeded the 15-minute execution window; retry the operation'
+        WHERE status = 'RUNNING' AND started_at < now() - interval '15 minutes'
+        RETURNING material_id AS "materialId", job_type AS "jobType"
+      `;
+      const materials = expired
+        .filter((job) => job.jobType === 'EXTRACT_TEXT')
+        .map((job) => job.materialId);
+      if (materials.length)
+        await transaction.material.updateMany({
+          where: { id: { in: materials }, processingStatus: 'PROCESSING' },
+          data: { processingStatus: 'FAILED' },
+        });
+      return expired.length;
+    });
+  }
+
   async findOwnedMaterial(
     ownerUserId: string,
     materialId: string,
@@ -93,17 +117,18 @@ export class ProcessingJobsRepository {
     return this.prisma.$transaction(async (transaction) => {
       const rows = await transaction.$queryRaw<ClaimedJobRow[]>`
         WITH claimed AS (
-          SELECT id
-          FROM processing_jobs
-           WHERE status = 'QUEUED' AND job_type = 'EXTRACT_TEXT'
-          ORDER BY created_at ASC, id ASC
-          FOR UPDATE SKIP LOCKED
+          SELECT queued.id
+          FROM processing_jobs queued
+          JOIN materials material ON material.id = queued.material_id
+          WHERE queued.status = 'QUEUED' AND queued.job_type = 'EXTRACT_TEXT'
+          ORDER BY queued.created_at ASC, queued.id ASC
+          FOR UPDATE OF material SKIP LOCKED
           LIMIT 1
         )
         UPDATE processing_jobs AS job
         SET status = 'RUNNING', started_at = now()
         FROM claimed
-        WHERE job.id = claimed.id
+        WHERE job.id = claimed.id AND job.status = 'QUEUED'
         RETURNING
           job.id,
           job.material_id AS "materialId",

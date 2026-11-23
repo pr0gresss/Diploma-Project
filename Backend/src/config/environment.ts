@@ -33,9 +33,17 @@ const environmentSchema = z
     TIKA_URL: optionalUrl.refine((value) => {
       if (!value) return true;
       const url = new URL(value);
-      return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/';
+      return (
+        ['http:', 'https:'].includes(url.protocol) &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        !url.hash &&
+        url.pathname === '/'
+      );
     }, 'TIKA_URL must be an HTTP(S) service origin without credentials'),
     TIKA_TIMEOUT_MS: z.coerce.number().int().min(1).max(300000).default(60000),
+    PROCESSING_WORKER_ENABLED: z.enum(['true', 'false']).default('true'),
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     S3_BUCKET: optionalText,
     S3_REGION: z.string().min(1).default('auto'),
@@ -43,10 +51,6 @@ const environmentSchema = z
     AWS_ACCESS_KEY_ID: optionalText,
     AWS_SECRET_ACCESS_KEY: optionalText,
     AWS_SESSION_TOKEN: optionalText,
-    OPENAI_OAUTH_ENABLED: z.enum(['true', 'false']).default('false'),
-    OPENAI_OAUTH_FILE: z.string().min(1).default('.secrets/openai-oauth.json'),
-    OPENAI_OAUTH_OWNER_USER_ID: z.uuid().optional(),
-    OPENAI_MODEL: optionalText,
     LLM_BASE_URL: z
       .string()
       .url()
@@ -78,17 +82,6 @@ const environmentSchema = z
       .default(8192),
   })
   .superRefine((environment, context) => {
-    if (
-      environment.OPENAI_OAUTH_ENABLED === 'true' &&
-      !environment.OPENAI_OAUTH_OWNER_USER_ID
-    ) {
-      context.addIssue({
-        code: 'custom',
-        path: ['OPENAI_OAUTH_OWNER_USER_ID'],
-        message:
-          'Set the local account allowed to use this self-hosted OpenAI OAuth session',
-      });
-    }
     if (environment.STORAGE_DRIVER === 's3') {
       for (const key of [
         'S3_BUCKET',

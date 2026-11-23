@@ -134,10 +134,7 @@ export class MaterialsService {
 
   async delete(ownerUserId: string, materialId: string): Promise<void> {
     await this.findOwnedOrThrow(ownerUserId, materialId);
-    const storageKeys =
-      await this.materialsRepository.findStorageKeys(materialId);
-
-    await this.materialsRepository.delete(materialId);
+    const storageKeys = await this.materialsRepository.delete(materialId);
     await this.cleanupKeys(storageKeys);
 
     logEvent(this.logger, 'log', 'material_deleted', {

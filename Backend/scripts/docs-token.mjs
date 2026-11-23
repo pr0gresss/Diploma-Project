@@ -1,7 +1,8 @@
 // Development bridge only, until HTTP authentication controllers are implemented.
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../dist/app.module.js';
+process.env.PROCESSING_WORKER_ENABLED = 'false';
+const { AppModule } = await import('../dist/app.module.js');
 import { AuthService } from '../dist/modules/auth/auth.service.js';
 
 if (process.env.NODE_ENV === 'production') {

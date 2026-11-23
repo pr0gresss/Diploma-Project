@@ -6,6 +6,7 @@ See `.env.example`:
 | --- | --- | --- |
 | `DATABASE_URL` | yes | PostgreSQL connection string |
 | `PORT` | no | HTTP port (default `3000`) |
+| `PROCESSING_WORKER_ENABLED` | no | `true` by default; `false` disables extraction polling and stale-job recovery |
 | `JWT_SECRET` | yes | Access-token signing secret, at least 32 characters |
 | `JWT_ISSUER` | no | Token issuer (default `ai-study-workspace`) |
 | `JWT_AUDIENCE` | no | Token audience (default `ai-study-workspace-api`) |

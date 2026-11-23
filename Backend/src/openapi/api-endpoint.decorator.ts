@@ -118,6 +118,7 @@ export function ApiEndpoint(options: {
             409: 'Operation conflicts with resource state, uniqueness or assessment history.',
             413: 'Uploaded document exceeds the size limit.',
             415: 'Unsupported document type.',
+            429: 'Authentication request limit exceeded; retry after the indicated delay.',
             500: 'Unexpected server failure.',
             503: 'Private object storage or the AI provider is unavailable or not configured.',
           } as Record<number, string>
@@ -167,6 +168,10 @@ export function ApiEndpoint(options: {
                   statusCode: 415,
                   message: 'Only PDF and DOCX documents are supported',
                   errorCode: 'unsupported_media_type',
+                },
+                429: {
+                  statusCode: 429,
+                  message: 'ThrottlerException: Too Many Requests',
                 },
                 500: { statusCode: 500, message: 'Internal server error' },
                 503: {

@@ -27,6 +27,10 @@ export class ProcessingJobsService {
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
+  async recoverStaleJobs(): Promise<number> {
+    return this.processingJobsRepository.recoverStaleJobs();
+  }
+
   async listForMaterial(
     ownerUserId: string,
     materialId: string,
@@ -104,10 +108,9 @@ export class ProcessingJobsService {
       throw new ValidationError('Extracted text exceeds the 20 MiB limit');
     }
 
-    const extractedTextKey = this.extractedTextKey(job.materialId);
-    await this.storage.put(extractedTextKey, text);
-
+    const extractedTextKey = this.extractedTextKey(job.materialId, job.id);
     try {
+      await this.storage.put(extractedTextKey, text);
       const completed = await this.processingJobsRepository.completeExtraction(
         jobId,
         job.materialId,
@@ -123,8 +126,15 @@ export class ProcessingJobsService {
 
       return completed;
     } catch (error) {
-      // The database is the source of truth; an unreferenced object is logged
-      // for reconciliation instead of being presented as success.
+      // A lost commit response is ambiguous: confirm publication before cleanup.
+      // If reconciliation itself fails, retain the object rather than delete data.
+      try {
+        const current = await this.processingJobsRepository.findById(jobId);
+        if (current?.status === 'SUCCEEDED') return current;
+        await this.storage.delete(extractedTextKey);
+      } catch {
+        this.logger.warn('extraction_output_reconciliation_required');
+      }
       logEvent(this.logger, 'error', 'processing_job_completion_failed', {
         jobId,
         materialId: job.materialId,
@@ -167,8 +177,8 @@ export class ProcessingJobsService {
     return failed;
   }
 
-  extractedTextKey(materialId: string): string {
-    return `materials/${materialId}/extracted.txt`;
+  extractedTextKey(materialId: string, jobId: string): string {
+    return `materials/${materialId}/extractions/${jobId}.txt`;
   }
 }
 

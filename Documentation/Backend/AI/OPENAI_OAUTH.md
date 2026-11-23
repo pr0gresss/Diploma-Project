@@ -135,8 +135,9 @@ Check owner, material readiness and source size
 On failure the job becomes `FAILED`, with a sanitized message and no partial
 quiz. Only one generation per material may be active, and this process allows
 one model completion at a time. There are no hidden retries/fallbacks.
-Abandoned RUNNING jobs after process failure require operator recovery; automatic
-recovery and a durable background AI worker remain future work.
+The active backend marks abandoned RUNNING jobs FAILED after 15 minutes; see
+[processing recovery](../CONTENT_EXTRACTION.md). A durable background AI worker
+remains future work.
 
 ## 5. Question types and grading
 

@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+process.env.PROCESSING_WORKER_ENABLED = 'false';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { NestFactory } from '@nestjs/core';
@@ -18,7 +19,10 @@ const { UsersRepository } =
   await import('../dist/modules/users/users.repository.js');
 const specification = JSON.parse(
   await readFile(
-    new URL('../../Documentation/Backend/API/reference/openapi.json', import.meta.url),
+    new URL(
+      '../../Documentation/Backend/API/reference/openapi.json',
+      import.meta.url,
+    ),
     'utf8',
   ),
 );

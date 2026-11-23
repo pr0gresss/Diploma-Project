@@ -1,4 +1,5 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '@nestjs/authentication';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiEndpoint } from '../../openapi/api-endpoint.decorator.js';
@@ -11,11 +12,13 @@ import { AuthService } from './auth.service.js';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiEndpoint({
     id: 'registerAccount',
     summary: 'Register an account and receive an access token',
@@ -24,7 +27,7 @@ export class AuthController {
     status: 201,
     response: 'AuthSession',
     body: registerSchema,
-    errors: [409],
+    errors: [409, 429],
     public: true,
     example: {
       email: 'student@example.com',
@@ -45,6 +48,7 @@ export class AuthController {
       'Public operation. Returns a short-lived bearer access token. Sign in again after expiry; refresh/logout endpoints are not provided.',
     response: 'AuthSession',
     body: signInSchema,
+    errors: [429],
     public: true,
     example: { email: 'alice@example.com', password: 'StudyDemo!2026' },
   })

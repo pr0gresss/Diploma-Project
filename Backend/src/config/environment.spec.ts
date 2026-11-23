@@ -15,6 +15,17 @@ describe('validateEnvironment', () => {
       PORT: 4000,
     });
   });
+  it('ignores legacy OAuth settings when configuring the active LLM provider', () => {
+    expect(() =>
+      validateEnvironment({
+        ...base,
+        OPENAI_OAUTH_ENABLED: 'true',
+        OPENAI_OAUTH_OWNER_USER_ID: '',
+        LLM_MODEL: 'test-model',
+        LLM_API_KEY: 'test-key',
+      }),
+    ).not.toThrow();
+  });
   it.each([
     {},
     { ...base, PORT: 0 },

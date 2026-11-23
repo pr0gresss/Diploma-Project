@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+process.env.PROCESSING_WORKER_ENABLED = 'false';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';

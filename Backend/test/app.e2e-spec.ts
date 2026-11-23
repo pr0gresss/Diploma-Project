@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
-import { AppModule } from './../src/app.module.js';
+process.env.PROCESSING_WORKER_ENABLED = 'false';
+const { AppModule } = await import('./../src/app.module.js');
 import { setupOpenApi } from './../src/openapi/openapi.js';
 
 describe('AppController (e2e)', () => {

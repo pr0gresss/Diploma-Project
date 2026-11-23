@@ -1,5 +1,12 @@
 # Authentication and errors
 
+Public authentication routes use per-process, per-route IP limits: 5 registration
+requests and 10 sign-in requests per minute. Excess requests return 429 with
+`Retry-After`. Other API routes are not throttled by this guard. The backend does
+not trust forwarded IP headers; clients behind the same reverse proxy share its
+observed IP bucket. Multi-instance deployments need a shared limiter at their
+trusted gateway or a shared throttler storage adapter.
+
 [Documentation home](../README.md)
 
 ## Bearer authentication

@@ -33,4 +33,10 @@ Run from the repository's `Backend/` folder:
 
 Extraction checks: `npm run test:tika` uses isolated local storage; `npm run test:tika:r2` uses the configured R2 bucket.
 
+`npm run test:processing` exercises actual PostgreSQL queue claims, stale-job
+recovery, and deletion locks in a disposable schema. The configured database
+login needs CREATE SCHEMA permission. The test does not claim application jobs
+or change the application's tables. Service/HTTP/e2e/documentation utilities
+disable the worker before importing the application module.
+
 [Backend reference](README.md)

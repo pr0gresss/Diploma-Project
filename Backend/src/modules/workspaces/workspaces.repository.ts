@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { rethrowPrismaError } from '../../common/prisma/prisma-error.mapper.js';
+import { ConflictError, NotFoundError } from '../../common/errors/index.js';
 import {
   pageOf,
   type NormalizedPageQuery,
@@ -110,11 +111,43 @@ export class WorkspacesRepository {
     }
   }
 
-  async delete(workspaceId: string): Promise<void> {
+  async delete(workspaceId: string): Promise<string[]> {
     try {
-      await this.prisma.workspace.delete({
-        where: { id: workspaceId },
-        select: { id: true },
+      return await this.prisma.$transaction(async (transaction) => {
+        const locked = await transaction.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM workspaces WHERE id = ${workspaceId}::uuid FOR UPDATE
+        `;
+        if (!locked.length) throw new NotFoundError('Workspace not found');
+        // Prevent new claims while checking jobs and collecting output keys.
+        await transaction.$queryRaw`
+          SELECT id FROM materials WHERE workspace_id = ${workspaceId}::uuid ORDER BY id FOR UPDATE
+        `;
+        const running = await transaction.processingJob.count({
+          where: { material: { workspaceId }, status: 'RUNNING' },
+        });
+        if (running)
+          throw new ConflictError(
+            'Wait for active processing before deleting this workspace',
+          );
+        const materials = await transaction.material.findMany({
+          where: { workspaceId },
+          select: {
+            storageKey: true,
+            extractedTextKey: true,
+            studyGuides: { select: { storageKey: true } },
+          },
+        });
+        const keys = new Set<string>();
+        for (const material of materials) {
+          keys.add(material.storageKey);
+          if (material.extractedTextKey) keys.add(material.extractedTextKey);
+          for (const guide of material.studyGuides) keys.add(guide.storageKey);
+        }
+        await transaction.workspace.delete({
+          where: { id: workspaceId },
+          select: { id: true },
+        });
+        return [...keys];
       });
     } catch (error) {
       return rethrowPrismaError(error, {
@@ -123,33 +156,5 @@ export class WorkspacesRepository {
           'The workspace contains quiz assessment history and cannot be deleted',
       });
     }
-  }
-
-  /**
-   * Returns every private object that belongs to the workspace tree so the
-   * caller can clean up storage after the database commit.
-   */
-  async findStorageKeys(workspaceId: string): Promise<string[]> {
-    const materials = await this.prisma.material.findMany({
-      where: { workspaceId },
-      select: {
-        storageKey: true,
-        extractedTextKey: true,
-        studyGuides: { select: { storageKey: true } },
-      },
-    });
-
-    const keys = new Set<string>();
-    for (const material of materials) {
-      keys.add(material.storageKey);
-      if (material.extractedTextKey) {
-        keys.add(material.extractedTextKey);
-      }
-      for (const guide of material.studyGuides) {
-        keys.add(guide.storageKey);
-      }
-    }
-
-    return [...keys];
   }
 }

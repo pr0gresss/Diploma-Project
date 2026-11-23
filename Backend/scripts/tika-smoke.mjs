@@ -1,5 +1,6 @@
 // Live Tika + PostgreSQL + isolated local storage. Never claims other users' jobs.
 import 'reflect-metadata';
+process.env.PROCESSING_WORKER_ENABLED = 'false';
 import 'dotenv/config';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -157,8 +158,13 @@ try {
       return { ...job, material: source };
     });
     const worker = new ExtractionWorker(
-      new ConfigService({ TIKA_URL: tikaUrl, TIKA_TIMEOUT_MS: 60000 }),
+      new ConfigService({
+        TIKA_URL: tikaUrl,
+        TIKA_TIMEOUT_MS: 60000,
+        PROCESSING_WORKER_ENABLED: 'true',
+      }),
       {
+        recoverStaleJobs: async () => 0,
         claimNextJob: async () => claimed,
         completeExtraction: jobs.completeExtraction.bind(jobs),
         failExtraction: jobs.failExtraction.bind(jobs),
@@ -192,8 +198,18 @@ try {
   }
 } finally {
   try {
-    if (workspaceId)
+    if (workspaceId) {
+      // runOnce has settled; only this fixture's manually claimed jobs can remain.
+      await prisma.processingJob.updateMany({
+        where: { material: { workspaceId }, status: 'RUNNING' },
+        data: {
+          status: 'FAILED',
+          finishedAt: new Date(),
+          errorMessage: 'Smoke check interrupted',
+        },
+      });
       await app.get(WorkspacesService).delete(userId, workspaceId);
+    }
     if (userId) await prisma.user.delete({ where: { id: userId } });
   } finally {
     await app.close();

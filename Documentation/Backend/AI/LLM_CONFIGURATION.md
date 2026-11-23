@@ -56,4 +56,4 @@ The backend no longer loads the legacy direct-OAuth session or uses `OPENAI_*`
 settings for generation. The old login helper remains for compatibility but is
 not the gateway login flow. Existing material ownership checks still apply.
 Source text is sent to the configured provider only upon generation.
-Material must be READY; automatic extraction remains pending.
+Material must be READY; automatic extraction runs when `TIKA_URL` is configured.

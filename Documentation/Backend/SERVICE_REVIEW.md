@@ -45,7 +45,7 @@ The HTML report is generated at `coverage/index.html`.
 - A durable background AI worker and AI guide generation. Quiz generation now
   supports synchronous owner-scoped OpenAI OAuth calls; live setup/consent is
   required. Manual guide and quiz creation still accept supplied content.
-- Stale-running-job recovery and durable object-cleanup reconciliation.
+- Durable reconciliation after ambiguous database commits or storage cleanup failures.
 - Production deployment verification and complete repository test coverage.
 
 The smoke test supplies extracted text directly to the completion service; its

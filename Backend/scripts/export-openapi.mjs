@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+process.env.PROCESSING_WORKER_ENABLED = 'false';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { NestFactory } from '@nestjs/core';

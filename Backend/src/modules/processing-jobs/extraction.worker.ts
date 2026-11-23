@@ -1,16 +1,28 @@
-import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnApplicationBootstrap,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OBJECT_STORAGE, type ObjectStorage } from '../../infrastructure/storage/object-storage.interface.js';
+import {
+  OBJECT_STORAGE,
+  type ObjectStorage,
+} from '../../infrastructure/storage/object-storage.interface.js';
 import { ProcessingJobsService } from './processing-jobs.service.js';
 
 /** Database-backed polling: one job per process, atomic claims across instances. */
 @Injectable()
-export class ExtractionWorker implements OnApplicationBootstrap, OnApplicationShutdown {
+export class ExtractionWorker
+  implements OnApplicationBootstrap, OnApplicationShutdown
+{
   private readonly logger = new Logger(ExtractionWorker.name);
   private timer?: ReturnType<typeof setTimeout>;
   private stopping = false;
   private active?: Promise<void>;
   private controller?: AbortController;
+  private lastRecovery = 0;
 
   constructor(
     private readonly config: ConfigService,
@@ -19,7 +31,8 @@ export class ExtractionWorker implements OnApplicationBootstrap, OnApplicationSh
   ) {}
 
   onApplicationBootstrap(): void {
-    if (this.config.get<string>('TIKA_URL')) this.schedule(0);
+    if (this.config.get<string>('PROCESSING_WORKER_ENABLED') !== 'false')
+      this.schedule(0);
   }
 
   async onApplicationShutdown(): Promise<void> {
@@ -32,14 +45,25 @@ export class ExtractionWorker implements OnApplicationBootstrap, OnApplicationSh
   private schedule(delay: number): void {
     if (this.stopping) return;
     this.timer = setTimeout(() => {
-      this.active = this.runOnce().catch(() => {
-        this.logger.warn('extraction_worker_cycle_failed');
-      }).finally(() => this.schedule(1000));
+      this.active = this.runOnce()
+        .catch(() => {
+          this.logger.warn('extraction_worker_cycle_failed');
+        })
+        .finally(() => this.schedule(1000));
     }, delay);
     this.timer.unref();
   }
 
   async runOnce(): Promise<void> {
+    if (
+      this.stopping ||
+      this.config.get<string>('PROCESSING_WORKER_ENABLED') === 'false'
+    )
+      return;
+    if (Date.now() - this.lastRecovery >= 60000) {
+      await this.jobs.recoverStaleJobs();
+      this.lastRecovery = Date.now();
+    }
     const base = this.config.get<string>('TIKA_URL');
     if (!base || this.stopping) return;
     const job = await this.jobs.claimNextJob();
@@ -50,15 +74,21 @@ export class ExtractionWorker implements OnApplicationBootstrap, OnApplicationSh
       this.controller = new AbortController();
       const response = await fetch(`${base.replace(/\/+$/, '')}/tika`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/octet-stream', Accept: 'text/plain' },
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          Accept: 'text/plain',
+        },
         body: new Uint8Array(original),
         redirect: 'error',
         signal: AbortSignal.any([
           this.controller.signal,
-          AbortSignal.timeout(this.config.get<number>('TIKA_TIMEOUT_MS', 60000)),
+          AbortSignal.timeout(
+            this.config.get<number>('TIKA_TIMEOUT_MS', 60000),
+          ),
         ]),
       });
-      if (!response.ok || !response.body) throw new Error('Extraction unavailable');
+      if (!response.ok || !response.body)
+        throw new Error('Extraction unavailable');
       const reader = response.body.getReader();
       const chunks: Uint8Array[] = [];
       let bytes = 0;
@@ -74,11 +104,17 @@ export class ExtractionWorker implements OnApplicationBootstrap, OnApplicationSh
         await reader.cancel().catch(() => undefined);
         reader.releaseLock();
       }
-      const text = Buffer.concat(chunks).toString('utf8').replace(/\u0000/g, '').trim();
+      const text = Buffer.concat(chunks)
+        .toString('utf8')
+        .replaceAll(String.fromCharCode(0), '')
+        .trim();
       await this.jobs.completeExtraction(job.id, text);
     } catch {
       // Never persist provider bodies, credentials, source text or storage errors.
-      await this.jobs.failExtraction(job.id, 'Text extraction failed; check Tika availability, document validity and storage');
+      await this.jobs.failExtraction(
+        job.id,
+        'Text extraction failed; check Tika availability, document validity and storage',
+      );
     } finally {
       this.controller = undefined;
     }

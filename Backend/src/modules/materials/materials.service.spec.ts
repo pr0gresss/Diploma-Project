@@ -14,7 +14,6 @@ describe('MaterialsService', () => {
     findOwnedRaw: ReturnType<typeof vi.fn>;
     rename: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
-    findStorageKeys: ReturnType<typeof vi.fn>;
   };
   let workspaces: { findOwnedById: ReturnType<typeof vi.fn> };
   let jobs: { enqueueExtraction: ReturnType<typeof vi.fn> };
@@ -45,10 +44,7 @@ describe('MaterialsService', () => {
         .fn()
         .mockResolvedValue({ extractedTextKey: 'extracted.txt' }),
       rename: vi.fn().mockResolvedValue(material),
-      delete: vi.fn(),
-      findStorageKeys: vi
-        .fn()
-        .mockResolvedValue(['original.pdf', 'extracted.txt']),
+      delete: vi.fn().mockResolvedValue(['original.pdf', 'extracted.txt']),
     };
     workspaces = {
       findOwnedById: vi.fn().mockResolvedValue({ id: 'workspace' }),

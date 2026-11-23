@@ -293,6 +293,20 @@
               }
             }
           },
+          "429": {
+            "description": "Authentication request limit exceeded; retry after the indicated delay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 429,
+                  "message": "ThrottlerException: Too Many Requests"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Unexpected server failure.",
             "content": {
@@ -405,6 +419,20 @@
                   "statusCode": 401,
                   "message": "Invalid email or password",
                   "errorCode": "invalid_credentials"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Authentication request limit exceeded; retry after the indicated delay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 429,
+                  "message": "ThrottlerException: Too Many Requests"
                 }
               }
             }

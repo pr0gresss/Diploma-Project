@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthenticationModule, type Duration } from '@nestjs/authentication';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { UsersModule } from '../users/users.module.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthProvider } from './jwt-auth.provider.js';
@@ -9,6 +10,7 @@ import { AuthController } from './auth.controller.js';
 @Module({
   imports: [
     UsersModule,
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
     AuthenticationModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,7 +26,7 @@ import { AuthController } from './auth.controller.js';
       }),
     }),
   ],
-  providers: [JwtAuthProvider, AuthService],
+  providers: [JwtAuthProvider, AuthService, ThrottlerGuard],
   controllers: [AuthController],
   exports: [AuthService],
 })

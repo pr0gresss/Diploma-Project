@@ -28,12 +28,11 @@ describe('QuizGenerationService', () => {
     const completions = {
       maxContextChars: 60000,
       assertAllowed: vi.fn(),
-      completeJson: vi
-        .fn()
-        .mockResolvedValue({
-          displayName: 'Generated quiz',
-          questions: [question],
-        }),
+      validateInput: vi.fn(),
+      completeJson: vi.fn().mockResolvedValue({
+        displayName: 'Generated quiz',
+        questions: [question],
+      }),
     };
     const materials = {
       get: vi.fn().mockResolvedValue({ processingStatus: 'READY' }),
@@ -74,6 +73,17 @@ describe('QuizGenerationService', () => {
         questions: [expect.objectContaining({ questionType: 'MULTI_SELECT' })],
       }),
     );
+  });
+  it('rejects the full prompt budget before creating a job', async () => {
+    const { service, completions, jobs } = setup();
+    completions.validateInput.mockImplementation(() => {
+      throw new ValidationError('Input including instructions is too long');
+    });
+    await expect(
+      service.generate('owner', 'material', options),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(jobs.create).not.toHaveBeenCalled();
+    expect(completions.completeJson).not.toHaveBeenCalled();
   });
   it('does not start jobs for unready materials, oversized sources or invalid options', async () => {
     const { service, materials, jobs } = setup();

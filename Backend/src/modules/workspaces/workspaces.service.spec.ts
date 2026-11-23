@@ -14,7 +14,6 @@ describe('WorkspacesService', () => {
     create: ReturnType<typeof vi.fn>;
     rename: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
-    findStorageKeys: ReturnType<typeof vi.fn>;
   };
   let storage: { delete: ReturnType<typeof vi.fn> };
   let service: WorkspacesService;
@@ -24,8 +23,7 @@ describe('WorkspacesService', () => {
       findOwnedById: vi.fn().mockResolvedValue(workspace),
       create: vi.fn().mockResolvedValue(workspace),
       rename: vi.fn().mockResolvedValue(workspace),
-      delete: vi.fn(),
-      findStorageKeys: vi.fn().mockResolvedValue(['original', 'guide']),
+      delete: vi.fn().mockResolvedValue(['original', 'guide']),
     };
     storage = { delete: vi.fn() };
     service = new WorkspacesService(

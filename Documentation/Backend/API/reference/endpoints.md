@@ -267,6 +267,17 @@ Content-Type: `application/json`.
 }
 ```
 
+#### 429 — Authentication request limit exceeded; retry after the indicated delay.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 429,
+  "message": "ThrottlerException: Too Many Requests"
+}
+```
+
 #### 500 — Unexpected server failure.
 
 Content-Type: `application/json`.
@@ -350,6 +361,17 @@ Content-Type: `application/json`.
   "statusCode": 401,
   "message": "Invalid email or password",
   "errorCode": "invalid_credentials"
+}
+```
+
+#### 429 — Authentication request limit exceeded; retry after the indicated delay.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 429,
+  "message": "ThrottlerException: Too Many Requests"
 }
 ```
 

@@ -80,10 +80,7 @@ export class WorkspacesService {
    */
   async delete(ownerUserId: string, workspaceId: string): Promise<void> {
     await this.findOwnedOrThrow(ownerUserId, workspaceId);
-    const storageKeys =
-      await this.workspacesRepository.findStorageKeys(workspaceId);
-
-    await this.workspacesRepository.delete(workspaceId);
+    const storageKeys = await this.workspacesRepository.delete(workspaceId);
     await this.deleteStorageObjects(storageKeys);
 
     logEvent(this.logger, 'log', 'workspace_deleted', {

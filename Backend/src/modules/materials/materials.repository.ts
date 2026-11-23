@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { rethrowPrismaError } from '../../common/prisma/prisma-error.mapper.js';
+import { ConflictError, NotFoundError } from '../../common/errors/index.js';
 import {
   pageOf,
   type NormalizedPageQuery,
@@ -217,11 +218,37 @@ export class MaterialsRepository {
     }
   }
 
-  async delete(materialId: string): Promise<void> {
+  async delete(materialId: string): Promise<string[]> {
     try {
-      await this.prisma.material.delete({
-        where: { id: materialId },
-        select: { id: true },
+      return await this.prisma.$transaction(async (transaction) => {
+        const locked = await transaction.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM materials WHERE id = ${materialId}::uuid FOR UPDATE
+        `;
+        if (!locked.length) throw new NotFoundError('Material not found');
+        const running = await transaction.processingJob.count({
+          where: { materialId, status: 'RUNNING' },
+        });
+        if (running)
+          throw new ConflictError(
+            'Wait for active processing before deleting this material',
+          );
+        const material = await transaction.material.findUniqueOrThrow({
+          where: { id: materialId },
+          select: {
+            storageKey: true,
+            extractedTextKey: true,
+            studyGuides: { select: { storageKey: true } },
+          },
+        });
+        await transaction.material.delete({
+          where: { id: materialId },
+          select: { id: true },
+        });
+        return [
+          material.storageKey,
+          ...(material.extractedTextKey ? [material.extractedTextKey] : []),
+          ...material.studyGuides.map((guide) => guide.storageKey),
+        ];
       });
     } catch (error) {
       return rethrowPrismaError(error, {
@@ -230,27 +257,6 @@ export class MaterialsRepository {
           'The material has quiz assessment history and cannot be deleted',
       });
     }
-  }
-
-  async findStorageKeys(materialId: string): Promise<string[]> {
-    const material = await this.prisma.material.findUnique({
-      where: { id: materialId },
-      select: {
-        storageKey: true,
-        extractedTextKey: true,
-        studyGuides: { select: { storageKey: true } },
-      },
-    });
-
-    if (!material) {
-      return [];
-    }
-
-    return [
-      material.storageKey,
-      ...(material.extractedTextKey ? [material.extractedTextKey] : []),
-      ...material.studyGuides.map((guide) => guide.storageKey),
-    ];
   }
 }
 
