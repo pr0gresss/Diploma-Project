@@ -63,6 +63,10 @@ npm run start:prod
 
 ## Run the complete project in Docker
 
+For the integrated Codex gateway, follow the
+[step-by-step WSL/Docker guide](../Documentation/Deployment/CODEX_DOCKER.md).
+Set CODEX_GATEWAY_KEY in CI/.env before using the root Compose stack.
+
 From the repository root:
 
 ```powershell
@@ -74,7 +78,7 @@ docker compose --env-file CI/.env ps
 
 Frontend: http://localhost:8080. Backend: http://localhost:3000.
 The stack configures PostgreSQL, migrations, and Tika automatically.
-For operations and demo data, see the [deployment guide](../Documentation/Deployment/README.md).
+For operations, see the [deployment guide](../Documentation/Deployment/README.md).
 
 All other documentation is in the [documentation index](../Documentation/README.md),
 including the [backend reference](../Documentation/Backend/README.md),
@@ -178,7 +182,8 @@ prove remaining account quota or successful generation.
 For a Docker backend, copy the four LLM settings into CI/.env and use a gateway
 address reachable from that container. A host gateway bound only to 127.0.0.1 is
 not automatically reachable through host.docker.internal. Use a secured private
-gateway deployment as described in the guide; the supplied stack does not include one.
+gateway deployment as described in the guide, or use the integrated Compose gateway
+at http://codex-gateway:8317/v1 with CODEX_GATEWAY_KEY as its client key.
 Host development is the direct path for the supplied loopback gateway helper.
 
 Alternatively, for direct OpenAI API access, obtain an API key from your OpenAI
@@ -214,6 +219,6 @@ docker compose --env-file CI/.env logs --tail 100 backend tika migrate
 ```
 
 For a host frontend, follow the [frontend guide](../Documentation/Frontend/README.md).
-Its current API base defaults to localhost:3000; adjust frontend configuration if
-using another backend port. Do not assume the Docker frontend automatically uses
-the /api proxy while this default is present.
+Its API base is /api. Host development proxies to localhost:3000; change
+Frontend/proxy.conf.json if using another local backend port. Docker nginx
+proxies to backend:3000 independently of the published BACKEND_PORT.

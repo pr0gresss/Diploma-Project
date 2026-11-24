@@ -1,6 +1,25 @@
 name: ai-study-workspace
 
 services:
+  codex-gateway:
+    # Build the upstream version targeted by our gateway utilities.
+    build:
+      context: https://github.com/router-for-me/CLIProxyAPI.git#v8.1.2
+      args:
+        VERSION: v8.1.2
+    restart: unless-stopped
+    init: true
+    entrypoint: ["/bin/sh", "/gateway-entrypoint.sh"]
+    command: []
+    environment:
+      CODEX_GATEWAY_KEY: ${CODEX_GATEWAY_KEY:?Set CODEX_GATEWAY_KEY in CI/.env}
+    volumes:
+      - ./CI/codex-gateway-entrypoint.sh:/gateway-entrypoint.sh:ro
+      - codex-gateway-auth:/root/.cli-proxy-api
+    # No published ports: clients use the Compose network.
+    expose:
+      - "8317"
+
   db:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -56,10 +75,10 @@ services:
       JWT_ISSUER: ai-study-workspace
       JWT_AUDIENCE: ai-study-workspace-api
       JWT_ACCESS_TTL: 15m
-      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-codex_gateway}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://codex-gateway:8317/v1}
       LLM_MODEL: ${LLM_MODEL:-}
-      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-${CODEX_GATEWAY_KEY:-}}
       LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-45000}
       LLM_MAX_CONTEXT_CHARS: ${LLM_MAX_CONTEXT_CHARS:-60000}
       LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-8192}
@@ -82,6 +101,8 @@ services:
       migrate:
         condition: service_completed_successfully
       tika:
+        condition: service_started
+      codex-gateway:
         condition: service_started
     healthcheck:
       # No public HTTP health endpoint exists yet; check the listening socket.
@@ -112,32 +133,23 @@ services:
       timeout: 5s
       retries: 5
 
-  seed:
-    image: postgres:17-alpine
+  seed-user:
+    build:
+      context: .
+      dockerfile: CI/backend.Dockerfile
+      target: migrate
     profiles: ["tools"]
     restart: "no"
+    command: ["npm", "run", "seed:user"]
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in CI/.env}
-    volumes:
-      - ./Backend/prisma/seed.sql:/seed/seed.sql:ro
-    entrypoint: ["psql"]
-    command:
-      [
-        "-h",
-        "db",
-        "-U",
-        "study",
-        "-d",
-        "study_workspace",
-        "-v",
-        "ON_ERROR_STOP=1",
-        "-f",
-        "/seed/seed.sql",
-      ]
+      DATABASE_URL: postgresql://study:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in CI/.env}@db:5432/study_workspace?schema=public
+      MOCK_USER_EMAIL: ${MOCK_USER_EMAIL:-}
+      MOCK_USER_PASSWORD: ${MOCK_USER_PASSWORD:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
 
 volumes:
+  codex-gateway-auth:
   postgres-data:
   object-storage:

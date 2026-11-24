@@ -35,9 +35,9 @@ QuizDraft contains id, quizId, answers, currentQuestionId, revision, createdAt, 
 
 The interceptor centralizes authenticated 401 session clearing and login redirection. Other failures are handled by features: the runner and generation dialog show messages, while some workspace requests only clear loading state. There is no universal dedicated 403/404/500 presentation or consistent caught-error logging.
 
-API_BASE_URL currently defaults to localhost:3000. Production proxy availability does not automatically change this injection token; verify the deployed frontend configuration rather than assuming requests use /api.
+API_BASE_URL is /api. Browser requests use the frontend origin; the dev server or nginx forwards them to the backend.
 
-By default, backend calls use the same-origin `/api` prefix and the Angular dev server proxies `/api` to `http://localhost:3000` (see `Frontend/proxy.conf.json`). For local development right now, `API_BASE_URL` in `api.config.ts` points directly at `http://localhost:3000`; switch it back to `/api` to use the proxy. Production nginx uses `/api`.
+Backend calls use the same-origin `/api` prefix. The Angular dev server proxies it to `http://localhost:3000` (see `Frontend/proxy.conf.json`); production nginx proxies it to `http://backend:3000` on the Compose network. Both remove the /api prefix.
 
 Bearer tokens are attached automatically by `authInterceptor`. `AuthService.signIn()` and `AuthService.register()` save the `accessToken` and user in `localStorage`; `AuthService.signOut()` clears them. A 401 response from a non-auth endpoint also clears the session and redirects to `/login` with a `returnUrl`. The NestJS backend currently allows CORS from `http://localhost:4200` so the direct local setup works.
 

@@ -6,6 +6,9 @@ Docker Engine / Docker Desktop with Docker Compose v2 is required.
 
 ## Start
 
+For the integrated Codex gateway, follow the [WSL/Docker startup guide](CODEX_DOCKER.md)
+first to configure its client key, complete device login and select a model.
+
 From the repository root:
 
 ```powershell
@@ -35,17 +38,26 @@ waits for that exit and the frontend waits for the backend listening socket.
 The database container uses a separate volume and database from your host
 PostgreSQL; existing host data is not imported or changed.
 
-## Optional demo data
+## Application data
 
-```sh
-docker compose --env-file CI/.env --profile tools run --rm seed
-```
-
-The seed is idempotent. Demo accounts are `alice@example.com`, `bob@example.com`
-and `carol@example.com`, password `StudyDemo!2026`. Seed rows do not include
-actual PDF/DOCX/Markdown storage objects.
+Compose applies schema migrations without loading mock or demo data. Register
+an account through the application to get started. Existing database volumes
+retain their data; removing the seed service does not delete existing rows.
 
 ## Operations
+
+### Optional single user
+
+Set MOCK_USER_EMAIL and MOCK_USER_PASSWORD (12–128 characters) in CI/.env:
+
+```sh
+docker compose --env-file CI/.env --profile tools run --build --rm seed-user
+```
+
+Only the configured user is created, with the backend password hasher. Existing
+accounts/passwords are unchanged; no workspaces or other mock data are inserted.
+For host development, set these keys in Backend/.env and run `npm run seed:user`
+from Backend after migrations. Normal startup does not invoke this seeder.
 
 ```sh
 docker compose --env-file CI/.env logs -f backend

@@ -18,7 +18,7 @@ Tests cover the quiz runner's rendered question types, serialized saves, changes
 - Browser global error listeners and the auth interceptor exist. Caught API failures are not consistently logged.
 - Some workspace-loading failures clear loading state without a user-facing error.
 - 401 redirects are centralized; 403, 404 and 500 handling is feature-dependent.
-- API base configuration currently defaults to localhost:3000. Do not assume a deployed browser automatically uses the nginx /api proxy.
+- API requests use /api through the dev-server/nginx proxy; verify the proxy target if backend networking changes.
 - Responsive usability, keyboard behavior, contrast and full WCAG compliance require the [adaptive UI verification](../AdaptiveUI/verification.md).
 
 ## Requirements map

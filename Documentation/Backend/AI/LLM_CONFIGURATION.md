@@ -1,5 +1,10 @@
 # AI provider configuration
 
+For the root Compose stack, use the integrated gateway and follow the
+[WSL/Docker startup guide](../../Deployment/CODEX_DOCKER.md). Its private service
+address is http://codex-gateway:8317/v1; CODEX_GATEWAY_KEY configures client
+authentication. Host-run helper instructions below remain a separate option.
+
 The backend calls an OpenAI-compatible **Chat Completions** endpoint using the
 OpenAI SDK, like the reference StudyCoach project. Configure `Backend/.env`
 (or `CI/.env` when launching the root Compose stack):
