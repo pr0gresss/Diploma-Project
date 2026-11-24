@@ -1,3 +1,4 @@
+import { GenerateQuizDialogComponent } from '../../shared/components/generate-quiz-dialog.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -14,7 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { concatMap, from, Subscription } from 'rxjs';
 
 import { findQuizProgress, toWorkspaceFile } from '../../shared/services/adapters';
-import { ProgressReport, Quiz } from '../../shared/services/api.models';
+import { Material, ProgressReport, Quiz } from '../../shared/services/api.models';
 import { MaterialsService } from '../../shared/services/materials.service';
 import { WorkspaceOverviewService } from '../../shared/services/workspace-overview.service';
 import { PlatformState } from '../../shared/layout/platform-state.service';
@@ -25,7 +26,7 @@ import { FileKind, WorkspaceFile } from '../../shared/models';
 @Component({
   selector: 'app-workspace-page',
   standalone: true,
-  imports: [RouterLink, IconComponent, WorkspaceTabsComponent],
+  imports: [RouterLink, IconComponent, WorkspaceTabsComponent, GenerateQuizDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './workspace-page.component.html',
   styleUrl: './workspace-page.component.scss',
@@ -42,6 +43,10 @@ export class WorkspacePageComponent {
   private uploadSubscription?: Subscription;
   private activeWorkspaceId = '';
   private activeRouteId = '';
+
+  readonly generationMaterials = signal<Material[]>([]);
+  readonly showGenerator = signal(false);
+  readonly selectedMaterialIds = computed(() => this.selectedFiles().map((f) => f.id));
 
   readonly files = signal<WorkspaceFile[]>([]);
   readonly notesCount = signal(0);
@@ -76,7 +81,9 @@ export class WorkspacePageComponent {
   });
   readonly filteredFiles = computed(() => {
     const query = this.fileQuery().trim().toLowerCase();
-    return query ? this.files().filter((file) => file.name.toLowerCase().includes(query)) : this.files();
+    return query
+      ? this.files().filter((file) => file.name.toLowerCase().includes(query))
+      : this.files();
   });
 
   readonly fileQuery = signal('');
@@ -145,8 +152,15 @@ export class WorkspacePageComponent {
 
   openQuiz(): void {
     if (!this.selectedCount()) return;
-    this.layout.setTab('quizzes');
-    void this.router.navigate(['/quizzes']);
+    this.showGenerator.set(true);
+  }
+
+  generated(results: Quiz[]): void {
+    this.showGenerator.set(false);
+    const returnUrl = '/workspaces/' + this.workspaceId() + '/quizzes';
+    if (results.length === 1)
+      void this.router.navigate(['/quizzes', results[0].id], { queryParams: { returnUrl } });
+    else void this.router.navigate(['/workspaces', this.workspaceId(), 'quizzes']);
   }
 
   kindStyle(kind: FileKind): string {
@@ -170,6 +184,7 @@ export class WorkspacePageComponent {
 
   private reset(): void {
     this.files.set([]);
+    this.generationMaterials.set([]);
     this.notesCount.set(0);
     this.quizzesCount.set(0);
     this.quizzes.set([]);
@@ -186,6 +201,7 @@ export class WorkspacePageComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (overview) => {
+          this.generationMaterials.set(overview.materials);
           this.files.set(overview.materials.map(toWorkspaceFile));
           this.notesCount.set(overview.guides.length);
           this.quizzesCount.set(overview.quizzes.length);

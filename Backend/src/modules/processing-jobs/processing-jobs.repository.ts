@@ -175,7 +175,6 @@ export class ProcessingJobsRepository {
     jobId: string,
     materialId: string,
     extractedTextKey: string,
-    extractedText?: string,
   ): Promise<ProcessingJobSummary> {
     return this.prisma.$transaction(async (transaction) => {
       const updated = await transaction.processingJob.updateMany({
@@ -201,7 +200,6 @@ export class ProcessingJobsRepository {
         data: {
           processingStatus: 'READY',
           extractedTextKey,
-          ...(extractedText === undefined ? {} : { extractedText }),
         },
         select: { id: true },
       });

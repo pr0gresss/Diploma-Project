@@ -70,6 +70,8 @@ export const routes: Routes = [
       },
       {
         path: 'quizzes/:quizId',
+        runGuardsAndResolvers: 'always',
+        canDeactivate: [(component: { canLeave: () => Promise<boolean> }) => component.canLeave()],
         title: 'Quiz · AI study workspace',
         loadComponent: () =>
           import('./features/quizzes/quiz-runner.component').then((m) => m.QuizRunnerComponent),

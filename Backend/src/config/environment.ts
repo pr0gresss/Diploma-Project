@@ -1,3 +1,4 @@
+import { resolveLlmProvider } from './llm-provider.js';
 import { z } from 'zod';
 
 // Compose supplies empty strings for unset optional variables.
@@ -132,7 +133,8 @@ export type Environment = z.infer<typeof environmentSchema>;
 export function validateEnvironment(
   values: Record<string, unknown>,
 ): Record<string, unknown> {
-  const result = environmentSchema.safeParse(values);
+  const selected = resolveLlmProvider(values);
+  const result = environmentSchema.safeParse({ ...values, LLM_BASE_URL: selected.baseURL });
 
   if (!result.success) {
     const problems = result.error.issues
@@ -141,5 +143,5 @@ export function validateEnvironment(
     throw new Error(`Invalid environment configuration: ${problems}`);
   }
 
-  return result.data;
+  return { ...result.data, LLM_PROVIDER: selected.provider, LLM_BASE_URL: selected.baseURL };
 }

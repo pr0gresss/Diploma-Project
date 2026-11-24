@@ -56,5 +56,7 @@ export interface QuizSummary {
   questions: number;
   status: 'In progress' | 'Not started' | 'Completed';
   score?: string;
+  latestAttemptId?: string | null;
+  answeredCount?: number;
   mode: QuizMode;
 }

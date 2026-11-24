@@ -85,6 +85,13 @@ describe('QuizGenerationService', () => {
     expect(jobs.create).not.toHaveBeenCalled();
     expect(completions.completeJson).not.toHaveBeenCalled();
   });
+  it('distinguishes blank extracted text from an oversized source', async () => {
+    const { service, materials } = setup();
+    materials.readExtractedText.mockResolvedValue('  ');
+    await expect(service.generate('owner', 'material', options)).rejects.toThrow('Extracted text is blank');
+    materials.readExtractedText.mockResolvedValue('a'.repeat(60001));
+    await expect(service.generate('owner', 'material', options)).rejects.toThrow('60001 characters');
+  });
   it('does not start jobs for unready materials, oversized sources or invalid options', async () => {
     const { service, materials, jobs } = setup();
     materials.get.mockResolvedValue({ processingStatus: 'UPLOADED' });

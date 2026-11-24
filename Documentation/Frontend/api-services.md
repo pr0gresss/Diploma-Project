@@ -1,5 +1,42 @@
 # Angular API services
 
+## Contracts and examples
+
+The authoritative frontend types are in [api.models.ts](../../Frontend/src/app/shared/services/api.models.ts). The [backend API reference](../Backend/API/README.md) documents endpoint schemas and responses. Identifiers below are placeholders.
+
+Paginated responses use `{ items: T[], total: number, limit: number, offset: number }`. List requests use limit/offset and, where supported, search. Errors use `{ statusCode: number, message: string, errorCode?: string }` with optional error/details fields.
+
+Generate a quiz with `POST /materials/{materialId}/quizzes/generate`:
+
+```json
+{"questionCount":10,"questionTypes":["SINGLE_CHOICE","SELECT","MULTI_SELECT"]}
+```
+
+The response is a Quiz with id, materialId, displayName, questionCount, timestamps and optional draft/attempt summaries. Generation accepts an optional displayName. The dialog selects READY materials and submits separate requests sequentially.
+
+### Persisted quiz drafts
+
+| Method | Endpoint | Request | Response |
+| --- | --- | --- | --- |
+| POST | /quizzes/{quizId}/drafts | Empty object | QuizDraft, opened or resumed |
+| GET | /quiz-drafts/{id} | None | QuizDraft |
+| PUT | /quiz-drafts/{id} | SaveQuizDraft | Updated QuizDraft |
+| POST | /quiz-drafts/{id}/submit | revision | AttemptResult |
+
+Example SaveQuizDraft body:
+
+```json
+{"revision":2,"answers":[{"questionId":"question-uuid","selectedOptionIds":["option-uuid"]}],"currentQuestionId":"question-uuid"}
+```
+
+QuizDraft contains id, quizId, answers, currentQuestionId, revision, createdAt, updatedAt and nullable submittedAttemptId. Answers use option UUIDs, including an empty selection when cleared. Submission sends an object such as `{ "revision": 3 }`; the server supplies grading. A 409 revision conflict requires reloading the saved draft. QuizDraftsService accesses HttpClient directly rather than through a repository.
+
+### Error behavior and deployment caveat
+
+The interceptor centralizes authenticated 401 session clearing and login redirection. Other failures are handled by features: the runner and generation dialog show messages, while some workspace requests only clear loading state. There is no universal dedicated 403/404/500 presentation or consistent caught-error logging.
+
+API_BASE_URL currently defaults to localhost:3000. Production proxy availability does not automatically change this injection token; verify the deployed frontend configuration rather than assuming requests use /api.
+
 By default, backend calls use the same-origin `/api` prefix and the Angular dev server proxies `/api` to `http://localhost:3000` (see `Frontend/proxy.conf.json`). For local development right now, `API_BASE_URL` in `api.config.ts` points directly at `http://localhost:3000`; switch it back to `/api` to use the proxy. Production nginx uses `/api`.
 
 Bearer tokens are attached automatically by `authInterceptor`. `AuthService.signIn()` and `AuthService.register()` save the `accessToken` and user in `localStorage`; `AuthService.signOut()` clears them. A 401 response from a non-auth endpoint also clears the session and redirects to `/login` with a `returnUrl`. The NestJS backend currently allows CORS from `http://localhost:4200` so the direct local setup works.
@@ -53,7 +90,7 @@ Each repository owns the `HttpClient` calls and raw URLs for one backend control
 | `AttemptsService` | `AttemptsRepository` | `POST/GET /quizzes/{quizId}/attempts`, `GET /attempts/{attemptId}`, `GET /me/attempts` |
 | `ProgressService` | `ProgressRepository` | `GET /me/progress`, `GET /me/progress/overview` |
 
-This covers all 34 documented backend operations.
+This table is a service overview; consult the backend reference for the complete endpoint inventory.
 
 `WorkspaceOverviewService` is an aggregation helper, not an endpoint wrapper. It combines `MaterialsService`, `StudyGuidesService`, `QuizzesService`, and `ProgressService` for the workspace, study notes, and quizzes pages.
 

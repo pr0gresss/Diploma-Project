@@ -73,6 +73,7 @@ model User {
   updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   workspaces Workspace[]
+  drafts QuizDraft[]
   attempts   QuizAttempt[]
 
   @@map("users")
@@ -101,7 +102,6 @@ model Material {
   sizeBytes        BigInt                   @map("size_bytes")
   storageKey       String                   @unique @map("storage_key")
   extractedTextKey String?                  @unique @map("extracted_text_key")
-  extractedText    String?                  @map("extracted_text") @db.Text
   processingStatus MaterialProcessingStatus @default(UPLOADED) @map("processing_status")
   createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -154,6 +154,7 @@ model Quiz {
 
   material  Material       @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   questions QuizQuestion[]
+  drafts QuizDraft[]
   attempts  QuizAttempt[]
 
   @@index([materialId, createdAt(sort: Desc)])
@@ -208,6 +209,7 @@ model QuizAttempt {
   quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   user    User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   answers QuizAttemptAnswer[]
+  draft QuizDraft?
 
   @@unique([id, quizId])
   @@index([userId, submittedAt(sort: Desc)])
@@ -243,4 +245,21 @@ model QuizAttemptAnswerSelection {
 
   @@id([attemptId, questionId, selectedOptionId])
   @@map("quiz_attempt_answer_selections")
+}
+
+model QuizDraft {
+ id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ userId String @map("user_id") @db.Uuid
+ quizId String @map("quiz_id") @db.Uuid
+ answersJson Json @default("[]") @map("answers_json") @db.JsonB
+ currentQuestionId String? @map("current_question_id") @db.Uuid
+ revision Int @default(0)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+ submittedAttemptId String? @unique @map("submitted_attempt_id") @db.Uuid
+ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+ submittedAttempt QuizAttempt? @relation(fields: [submittedAttemptId], references: [id], onDelete: Restrict)
+ @@index([userId, quizId])
+ @@map("quiz_drafts")
 }

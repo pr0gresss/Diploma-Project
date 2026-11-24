@@ -1,3 +1,4 @@
+import { resolveLlmProvider } from '../../config/llm-provider.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -36,7 +37,7 @@ export class CompletionsService {
       !this.config.get<string>('LLM_API_KEY')
     ) {
       throw new AiUnavailableError(
-        'Configure LLM_MODEL and LLM_API_KEY to enable generation',
+        `Configure LLM_MODEL and LLM_API_KEY for ${this.config.get('LLM_PROVIDER', 'openai')} to enable generation`,
       );
     }
   }
@@ -71,10 +72,7 @@ export class CompletionsService {
       const timeout = this.config.get<number>('LLM_TIMEOUT_MS', 45000);
       const response = await this.createClient({
         apiKey: this.config.getOrThrow<string>('LLM_API_KEY'),
-        baseURL: this.config.get<string>(
-          'LLM_BASE_URL',
-          'https://api.openai.com/v1',
-        ),
+        baseURL: resolveLlmProvider({ LLM_PROVIDER: this.config.get('LLM_PROVIDER'), LLM_BASE_URL: this.config.get('LLM_BASE_URL') }).baseURL,
         timeout,
       }).chat.completions.create(
         {

@@ -155,3 +155,7 @@
     </div>
 
   </main>
+
+@if (showGenerator()) {
+  <app-generate-quiz-dialog [materials]="generationMaterials()" [initialSelection]="selectedMaterialIds()" (cancel)="showGenerator.set(false)" (generated)="generated($event)" />
+}

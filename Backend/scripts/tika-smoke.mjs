@@ -184,16 +184,15 @@ try {
           expected,
         ),
       );
-      const stored = await prisma.material.findUniqueOrThrow({
-        where: { id: material.id },
-      });
-      assert.ok(stored.extractedText.includes(expected));
+      const stored = await prisma.material.findUniqueOrThrow({ where: { id: material.id } });
+      assert.ok(stored.extractedTextKey);
+      assert.ok(await app.get(OBJECT_STORAGE).exists(stored.extractedTextKey));
       await assert.rejects(
         materials.readExtractedText(randomUUID(), material.id),
       );
     }
     console.log(
-      `PASS: ${expected ? extension + ' extraction, storage, database text and ownership' : 'corrupt PDF fails safely'}`,
+      `PASS: ${expected ? extension + ' extraction, storage, object-key persistence and ownership' : 'corrupt PDF fails safely'}`,
     );
   }
 } finally {

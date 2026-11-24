@@ -25,7 +25,7 @@ that deletes the records; external storage calls run after that transaction.
 After schema changes, run `npm run prisma:generate` and `npm run prisma:migrate:deploy`
 before building or starting the backend. Uploading PDF/DOCX creates a queued job;
 the worker moves the material through PROCESSING to READY or FAILED. Successful
-text is saved in private object storage and PostgreSQL and served through the
+text is saved in private object storage; PostgreSQL stores its object key. Text is served through the
 authenticated `GET /materials/:materialId/text` endpoint. Image-only documents
 require OCR support in the Tika image; empty extracted text is treated as failure.
 

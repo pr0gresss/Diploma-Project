@@ -1,98 +1,113 @@
 <main class="library" [class.with-generator]="isWorkspaceScoped()">
-    <p class="eyebrow">{{ pageEyebrow() }}</p>
-    <h1 class="page-title serif">{{ pageHeading() }}</h1>
-    <p class="subtitle">{{ pageSubtitle() }}</p>
+  <p class="eyebrow">{{ pageEyebrow() }}</p>
+  <h1 class="page-title serif">{{ pageHeading() }}</h1>
+  <p class="subtitle">{{ pageSubtitle() }}</p>
 
-    @if (isWorkspaceScoped()) {
-      <app-workspace-tabs
-        [workspaceId]="workspaceId()"
-        [filesCount]="materials().length"
-        [notesCount]="guidesCount()"
-        [quizzesCount]="quizzes().length"
-      />
-    }
+  @if (isWorkspaceScoped()) {
+    <app-workspace-tabs
+      [workspaceId]="workspaceId()"
+      [filesCount]="materials().length"
+      [notesCount]="guidesCount()"
+      [quizzesCount]="quizzes().length"
+    />
+  }
 
-    <div class="tabs" role="tablist" aria-label="Quiz filters">
-      <button type="button" role="tab" [class.active]="filter() === 'all'" [attr.aria-selected]="filter() === 'all'" (click)="setFilter('all')">All quizzes&nbsp;&nbsp;{{ counts().all }}</button>
-      <button type="button" role="tab" [class.active]="filter() === 'in-progress'" [attr.aria-selected]="filter() === 'in-progress'" (click)="setFilter('in-progress')">In progress&nbsp;&nbsp;{{ counts().inProgress }}</button>
-    </div>
+  <div class="tabs" role="tablist" aria-label="Quiz filters">
+    <button
+      type="button"
+      role="tab"
+      [class.active]="filter() === 'all'"
+      [attr.aria-selected]="filter() === 'all'"
+      (click)="setFilter('all')"
+    >
+      All quizzes&nbsp;&nbsp;{{ counts().all }}
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [class.active]="filter() === 'in-progress'"
+      [attr.aria-selected]="filter() === 'in-progress'"
+      (click)="setFilter('in-progress')"
+    >
+      In progress&nbsp;&nbsp;{{ counts().inProgress }}
+    </button>
+  </div>
 
-    <div class="quiz-list">
-      @for (quiz of visibleQuizzes(); track quiz.id) {
-        @if (quiz.status === 'In progress') {
-          <article class="quiz-card started">
-            <span class="status-badge"><app-icon name="clock" [size]="13" />In progress</span>
-            <h2 class="serif card-title">{{ quiz.title }}</h2>
-            <p class="card-meta">{{ quiz.meta }}</p>
-            <div class="progress-track" role="progressbar" aria-label="Completed questions" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progress(quiz)"><span [style.width.%]="progress(quiz)"></span></div>
-            <div class="card-actions">
-              <a class="button primary" [routerLink]="['/quizzes', quiz.id]">Continue quiz<app-icon name="arrow-white" [size]="17" /></a>
-              <p>Your progress is saved automatically.</p>
-            </div>
-          </article>
-        } @else {
-          <article class="quiz-card ready">
-            <div class="card-heading"><app-icon name="quiz" [size]="24" /><span>READY TO START</span></div>
-            <h2 class="serif card-title">{{ quiz.title }}</h2>
-            <p class="card-meta">{{ quiz.meta }}</p>
-            <div class="card-actions">
-              <p>Based on your workspace files</p>
-              <a class="button outline" [routerLink]="['/quizzes', quiz.id]">Start quiz</a>
-            </div>
-          </article>
-        }
-      } @empty {
-        <article class="quiz-card empty">
-          <h2 class="serif card-title">No quizzes found</h2>
-          <p class="card-meta">Quizzes created from your materials will appear here.</p>
+  <div class="quiz-list">
+    @for (quiz of visibleQuizzes(); track quiz.id) {
+      @if (quiz.status === 'In progress') {
+        <article class="quiz-card started">
+          <span class="status-badge"><app-icon name="clock" [size]="13" />In progress</span>
+          <h2 class="serif card-title">{{ quiz.title }}</h2>
+          <p class="card-meta">{{ quiz.meta }}</p>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="Completed questions"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="progress(quiz)"
+          >
+            <span [style.width.%]="progress(quiz)"></span>
+          </div>
+          <div class="card-actions">
+            <a
+              class="button primary"
+              [routerLink]="['/quizzes', quiz.id]"
+              [queryParams]="{ returnUrl: returnUrl() }"
+              >Resume quiz<app-icon name="arrow-white" [size]="17"
+            /></a>
+            <p>Your progress is saved automatically.</p>
+          </div>
+        </article>
+      } @else {
+        <article class="quiz-card ready">
+          <div class="card-heading">
+            <app-icon name="quiz" [size]="24" /><span>{{
+              quiz.status === 'Completed' ? 'COMPLETED' : 'NOT STARTED'
+            }}</span>
+          </div>
+          <h2 class="serif card-title">{{ quiz.title }}</h2>
+          <p class="card-meta">{{ quiz.meta }}</p>
+          <div class="card-actions">
+            <p>Based on your workspace files</p>
+            @if (quiz.latestAttemptId) {
+              <a
+                class="button outline"
+                [routerLink]="['/quizzes', quiz.id]"
+                [queryParams]="{ attemptId: quiz.latestAttemptId, returnUrl: returnUrl() }"
+                >Review result</a
+              >
+            }
+            <a
+              class="button outline"
+              [routerLink]="['/quizzes', quiz.id]"
+              [queryParams]="{ returnUrl: returnUrl() }"
+              >{{ quiz.status === 'Completed' ? 'Try again' : 'Start quiz' }}</a
+            >
+          </div>
         </article>
       }
-    </div>
-
-    @if (isWorkspaceScoped()) {
-      <section class="generate-form" aria-labelledby="generate-form-title">
-        <h2 class="serif" id="generate-form-title">Generate a quiz</h2>
-
-        <div class="generate-fields">
-          <label class="form-field">
-            <span>NUMBER OF QUESTIONS</span>
-            <input
-              type="number"
-              min="1"
-              max="50"
-              [value]="questionCount()"
-              (input)="onQuestionCount($event)"
-            />
-          </label>
-
-          <label class="form-field">
-            <span>QUESTION TYPE</span>
-            <span class="control">
-              <select aria-label="Question type" [value]="questionType()" (change)="onQuestionType($event)">
-                <option value="single">Single choice</option>
-                <option value="dropdown">Select · Dropdown</option>
-                <option value="multi">Multi select</option>
-              </select>
-              <img src="/icons/down.svg" width="13" height="13" alt="" aria-hidden="true" />
-            </span>
-          </label>
-        </div>
-
-        @if (!materials().length) {
-          <p class="generate-hint">Upload a file in this workspace before generating a quiz.</p>
-        }
-        @if (generateError()) {
-          <p class="generate-error" role="alert">{{ generateError() }}</p>
-        }
-
-        <button
-          type="button"
-          class="button primary generate-btn"
-          [disabled]="generating() || !materials().length"
-          (click)="generateQuiz()"
-        >
-          {{ generating() ? 'Generating…' : 'Generate quiz' }}
-        </button>
-      </section>
+    } @empty {
+      <article class="quiz-card empty">
+        <h2 class="serif card-title">No quizzes found</h2>
+        <p class="card-meta">Quizzes created from your materials will appear here.</p>
+      </article>
     }
-  </main>
+  </div>
+
+  <section class="generate-form" aria-label="Quiz generation">
+    <h2 class="serif">Generate a quiz</h2>
+    <p>Choose materials, question type, and number of questions.</p>
+    <button type="button" class="button primary generate-btn" (click)="generateQuiz()">
+      Generate quiz
+    </button>
+  </section>
+  @if (showGenerator()) {
+    <app-generate-quiz-dialog
+      [materials]="materials()"
+      (cancel)="showGenerator.set(false)"
+      (generated)="generated($event)"
+    />
+  }
+</main>

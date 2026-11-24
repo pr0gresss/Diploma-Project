@@ -121,7 +121,9 @@ export class QuizzesService {
       ownerUserId,
     });
 
-    return quiz;
+    return (
+      (await this.quizzesRepository.findOwnedById(ownerUserId, quizId)) ?? quiz
+    );
   }
 
   async delete(ownerUserId: string, quizId: string): Promise<void> {

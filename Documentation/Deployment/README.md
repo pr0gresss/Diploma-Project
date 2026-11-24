@@ -65,7 +65,7 @@ not change the existing database user's password; rotate it in PostgreSQL too.
 - Local object storage is persisted in a named volume, suitable for one host.
   Use the backend's S3/R2 driver for distributed deployments.
 - The backend polls extraction jobs when `TIKA_URL` is configured (the stack sets
-  `http://tika:9998`). Successful extraction saves text privately and in PostgreSQL;
+  `http://tika:9998`). Successful extraction saves text privately and its object key in PostgreSQL;
   invalid or empty documents fail and can be retried through the API.
 - Feature controllers are exposed through `/api/`, including authentication and
   study resources. Frontend application API integration is still pending.

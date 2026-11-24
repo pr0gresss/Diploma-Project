@@ -230,6 +230,112 @@ try {
       .slice(0, question.questionType === 'MULTI_SELECT' ? 2 : 1)
       .map((option) => option.id),
   }));
+  // Server drafts survive clients and protect against stale concurrent tabs.
+  const [draft, sameDraft] = await Promise.all(
+    [0, 1].map(() => call('POST', `/quizzes/${quiz.id}/drafts`, { token })),
+  );
+  assert.equal(draft.id, sameDraft.id);
+  assert.equal(draft.revision, 0);
+  assert.deepEqual(draft.answers, []);
+  assert.doesNotMatch(
+    JSON.stringify(draft),
+    /isCorrect|explanation|correctOption/,
+  );
+  await call('GET', `/quiz-drafts/${draft.id}`, {
+    token: stranger.accessToken,
+    status: 404,
+  });
+  await call('PUT', `/quiz-drafts/${draft.id}`, {
+    token: stranger.accessToken,
+    status: 404,
+    body: { revision: 0, answers: [], currentQuestionId: null },
+  });
+  await call('POST', `/quiz-drafts/${draft.id}/submit`, {
+    token: stranger.accessToken,
+    status: 404,
+    body: { revision: 0 },
+  });
+  await call('POST', `/quiz-drafts/${draft.id}/submit`, {
+    token,
+    status: 400,
+    body: { revision: 0 },
+  });
+  await call('PUT', `/quiz-drafts/${draft.id}`, {
+    token,
+    status: 400,
+    body: {
+      revision: 0,
+      answers: [
+        {
+          questionId: taking.questions[0].id,
+          selectedOptionIds: [taking.questions[1].options[0].id],
+        },
+      ],
+      currentQuestionId: null,
+    },
+  });
+  const snapshot = {
+    revision: 0,
+    answers: [correctAnswers[0]],
+    currentQuestionId: taking.questions[1].id,
+  };
+  const saves = await Promise.all(
+    [0, 1].map(() =>
+      fetch(`${base}/quiz-drafts/${draft.id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(snapshot),
+      }),
+    ),
+  );
+  assert.deepEqual(saves.map((r) => r.status).sort(), [200, 409]);
+  const resumed = await call('GET', `/quiz-drafts/${draft.id}`, { token });
+  assert.equal(resumed.revision, 1);
+  assert.deepEqual(resumed.answers, [correctAnswers[0]]);
+  const draftSummary = (
+    await call('GET', `/materials/${material.id}/quizzes`, { token })
+  ).items.find((q) => q.id === quiz.id);
+  assert.equal(draftSummary.activeDraft.id, draft.id);
+  assert.equal(draftSummary.activeDraft.answeredCount, 1);
+  assert.equal(draftSummary.activeDraft.totalQuestions, 3);
+  await call('PUT', `/quiz-drafts/${draft.id}`, {
+    token,
+    body: { revision: 1, answers: correctAnswers, currentQuestionId: null },
+  });
+  const submissions = await Promise.all(
+    [0, 1].map(() =>
+      call('POST', `/quiz-drafts/${draft.id}/submit`, {
+        token,
+        body: { revision: 2 },
+      }),
+    ),
+  );
+  assert.equal(submissions[0].id, submissions[1].id);
+  assert.equal(submissions[0].scorePercent, 100);
+  assert.equal(
+    (
+      await call('POST', `/quiz-drafts/${draft.id}/submit`, {
+        token,
+        body: { revision: 0 },
+      })
+    ).id,
+    submissions[0].id,
+  );
+  const afterDraft = (
+    await call('GET', `/materials/${material.id}/quizzes`, { token })
+  ).items.find((q) => q.id === quiz.id);
+  assert.equal(afterDraft.activeDraft, null);
+  assert.equal(afterDraft.attemptCount, 1);
+  assert.equal(afterDraft.latestAttemptId, submissions[0].id);
+  assert.equal(afterDraft.latestScorePercent, 100);
+  const freshDraft = await call('POST', `/quizzes/${quiz.id}/drafts`, {
+    token,
+  });
+  assert.notEqual(freshDraft.id, draft.id);
+  assert.deepEqual(freshDraft.answers, []);
   await call('POST', `/quizzes/${quiz.id}/attempts`, {
     token,
     status: 400,
@@ -390,7 +496,7 @@ try {
   await call('GET', `/quizzes/${quiz.id}/attempts`, { token });
   assert.equal(
     (await call('GET', '/me/progress', { token })).overview.totalAttempts,
-    3,
+    4,
   );
   assert.equal(
     (await call('GET', '/me/progress/overview', { token })).bestScorePercent,
@@ -404,6 +510,7 @@ try {
   await call('DELETE', `/materials/${material.id}`, { token, status: 409 });
   await call('DELETE', `/workspaces/${workspace.id}`, { token, status: 409 });
   // Remove only this test's assessment history to exercise eligible deletion routes.
+  await prisma.quizDraft.deleteMany({ where: { userId: registered.user.id } });
   await prisma.quizAttempt.deleteMany({
     where: { userId: registered.user.id },
   });
@@ -416,6 +523,8 @@ try {
   );
 } finally {
   try {
+    for (const userId of users)
+      await prisma.quizDraft.deleteMany({ where: { userId } });
     for (const userId of users)
       await prisma.quizAttempt.deleteMany({ where: { userId } });
     for (const workspace of workspaceIds)

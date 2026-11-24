@@ -13,6 +13,7 @@ For startup commands, begin with the [backend README](../Backend/README.md).
 | [Backend/Storage](Backend/Storage/README.md) | Private object storage and Cloudflare R2 setup |
 | [Database](Database/README.md) | Schema, data dictionary, integrity rules, Prisma migrations, roles, and test data |
 | [Frontend](Frontend/README.md) | Angular structure, development server, and build commands |
+| [Adaptive UI](AdaptiveUI/README.md) | Responsive layouts, design conventions, accessibility and verification |
 | [Deployment](Deployment/README.md) | Docker stack setup, operations, and deployment limitations |
 
 The [project overview](PROJECT.md) includes local development and database initialization

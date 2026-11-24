@@ -30,7 +30,6 @@ try {
   await admin.query(
     initial.replace('CREATE SCHEMA IF NOT EXISTS "public";', ''),
   );
-  await admin.query('ALTER TABLE materials ADD COLUMN extracted_text TEXT');
   const connection = new URL(process.env.DATABASE_URL);
   connection.searchParams.set('options', `-c search_path=${schema},public`);
   prisma = new PrismaClient({

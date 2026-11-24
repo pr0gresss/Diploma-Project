@@ -29,6 +29,15 @@ export interface QuizSummary {
   materialId: string;
   displayName: string;
   questionCount: number;
+  attemptCount: number;
+  latestAttemptId: string | null;
+  latestScorePercent: number | null;
+  activeDraft: {
+    id: string;
+    answeredCount: number;
+    totalQuestions: number;
+    updatedAt: Date;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }

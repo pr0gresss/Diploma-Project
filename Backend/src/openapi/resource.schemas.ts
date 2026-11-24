@@ -64,6 +64,17 @@ export const quizResponse = z.object({
   ...named,
   materialId: id,
   questionCount: count,
+  attemptCount: count,
+  latestAttemptId: id.nullable(),
+  latestScorePercent: score.nullable(),
+  activeDraft: z
+    .object({
+      id,
+      answeredCount: count,
+      totalQuestions: count,
+      updatedAt: timestamp,
+    })
+    .nullable(),
 });
 export const quizTakingResponse = z.object({
   id,
@@ -164,6 +175,19 @@ export const resourceSchemas = {
   MaterialDetails: materialDetailsResponse,
   StudyGuide: guideResponse,
   StudyGuideContent: guideContentResponse,
+  QuizDraft: z.object({
+    id,
+    userId: id,
+    quizId: id,
+    answers: z.array(
+      z.object({ questionId: id, selectedOptionIds: z.array(id) }),
+    ),
+    currentQuestionId: id.nullable(),
+    revision: count,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    submittedAttemptId: id.nullable(),
+  }),
   Quiz: quizResponse,
   QuizForTaking: quizTakingResponse,
   Attempt: attemptResponse,

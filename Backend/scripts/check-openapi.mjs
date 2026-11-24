@@ -55,11 +55,11 @@ try {
   const document = await documentResponse.json();
   assert.deepEqual(document, specification);
   const operations = Object.entries(document.paths).flatMap(([path, item]) =>
-    ['get', 'post', 'patch', 'delete']
+    ['get', 'post', 'put', 'patch', 'delete']
       .filter((method) => item[method])
       .map((method) => ({ path, method, ...item[method] })),
   );
-  assert.equal(operations.length, 35);
+  assert.equal(operations.length, 39);
   assert.equal(
     new Set(operations.map((operation) => operation.operationId)).size,
     operations.length,

@@ -35,6 +35,10 @@ Generated from controller decorators. Do not edit manually; run `npm run docs:ge
 | GET | `/quizzes/{quizId}` | `getQuizForTaking` | Bearer JWT |
 | PATCH | `/quizzes/{quizId}` | `renameQuiz` | Bearer JWT |
 | DELETE | `/quizzes/{quizId}` | `deleteQuiz` | Bearer JWT |
+| POST | `/quizzes/{quizId}/drafts` | `getOrCreateQuizDraft` | Bearer JWT |
+| GET | `/quiz-drafts/{draftId}` | `getQuizDraft` | Bearer JWT |
+| PUT | `/quiz-drafts/{draftId}` | `saveQuizDraft` | Bearer JWT |
+| POST | `/quiz-drafts/{draftId}/submit` | `submitQuizDraft` | Bearer JWT |
 | GET | `/me/attempts` | `listMyAttempts` | Bearer JWT |
 | GET | `/quizzes/{quizId}/attempts` | `listQuizAttempts` | Bearer JWT |
 | POST | `/quizzes/{quizId}/attempts` | `submitQuizAttempt` | Bearer JWT |
@@ -2260,6 +2264,10 @@ Content-Type: `application/json`.
   "materialId": "33333333-3333-4333-8333-333333333333",
   "displayName": "Transactions quiz",
   "questionCount": 1,
+  "attemptCount": 0,
+  "latestAttemptId": null,
+  "latestScorePercent": null,
+  "activeDraft": null,
   "createdAt": "2026-11-01T10:00:00.000Z",
   "updatedAt": "2026-11-01T10:00:00.000Z"
 }
@@ -2388,6 +2396,10 @@ Content-Type: `application/json`.
       "materialId": "33333333-3333-4333-8333-333333333333",
       "displayName": "Transactions quiz",
       "questionCount": 1,
+      "attemptCount": 0,
+      "latestAttemptId": null,
+      "latestScorePercent": null,
+      "activeDraft": null,
       "createdAt": "2026-11-01T10:00:00.000Z",
       "updatedAt": "2026-11-01T10:00:00.000Z"
     }
@@ -2504,6 +2516,10 @@ Content-Type: `application/json`.
   "materialId": "33333333-3333-4333-8333-333333333333",
   "displayName": "Transactions quiz",
   "questionCount": 1,
+  "attemptCount": 0,
+  "latestAttemptId": null,
+  "latestScorePercent": null,
+  "activeDraft": null,
   "createdAt": "2026-11-01T10:00:00.000Z",
   "updatedAt": "2026-11-01T10:00:00.000Z"
 }
@@ -2717,6 +2733,10 @@ Content-Type: `application/json`.
   "materialId": "33333333-3333-4333-8333-333333333333",
   "displayName": "Transactions quiz",
   "questionCount": 1,
+  "attemptCount": 0,
+  "latestAttemptId": null,
+  "latestScorePercent": null,
+  "activeDraft": null,
   "createdAt": "2026-11-01T10:00:00.000Z",
   "updatedAt": "2026-11-01T10:00:00.000Z"
 }
@@ -2797,6 +2817,416 @@ curl -i -X DELETE "$BASE_URL/quizzes/11111111-1111-4111-8111-111111111111" -H "A
 #### 204 — Deleted successfully; no response body.
 
 No response body.
+
+#### 400 — Invalid request parameters or body.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 400,
+  "message": "Request validation failed",
+  "errorCode": "validation_error"
+}
+```
+
+#### 401 — Missing or invalid credentials.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "errorCode": "missing_credentials"
+}
+```
+
+#### 404 — Resource not found, including resources owned by another user.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Resource not found",
+  "errorCode": "not_found"
+}
+```
+
+#### 409 — Operation conflicts with resource state, uniqueness or assessment history.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 409,
+  "message": "Operation conflicts with resource state",
+  "errorCode": "conflict"
+}
+```
+
+#### 500 — Unexpected server failure.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error"
+}
+```
+
+## POST /quizzes/{quizId}/drafts
+
+**Resume or start a personal quiz draft**
+
+Resume or start a personal quiz draft
+
+Operation ID: `getOrCreateQuizDraft`.
+
+### Parameters
+
+| Location | Name | Required | Type |
+| --- | --- | --- | --- |
+| path | `quizId` | yes | string |
+| header | `Authorization` | yes | `Bearer <accessToken>` |
+
+### Sample request
+
+Use `BASE_URL=http://localhost:3000` and a real access token. UUIDs below are illustrative; replace them with IDs returned by the API.
+
+```sh
+curl -i -X POST "$BASE_URL/quizzes/11111111-1111-4111-8111-111111111111/drafts" -H "Authorization: Bearer $TOKEN"
+```
+
+### Responses
+
+#### 200 — Operation succeeded.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "userId": "11111111-1111-4111-8111-111111111111",
+  "quizId": "44444444-4444-4444-8444-444444444444",
+  "answers": [],
+  "currentQuestionId": null,
+  "revision": 0,
+  "createdAt": "2026-11-01T10:00:00.000Z",
+  "updatedAt": "2026-11-01T10:00:00.000Z",
+  "submittedAttemptId": null
+}
+```
+
+#### 400 — Invalid request parameters or body.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 400,
+  "message": "Request validation failed",
+  "errorCode": "validation_error"
+}
+```
+
+#### 401 — Missing or invalid credentials.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "errorCode": "missing_credentials"
+}
+```
+
+#### 404 — Resource not found, including resources owned by another user.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Resource not found",
+  "errorCode": "not_found"
+}
+```
+
+#### 500 — Unexpected server failure.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error"
+}
+```
+
+## GET /quiz-drafts/{draftId}
+
+**Read a personal quiz draft**
+
+Read a personal quiz draft
+
+Operation ID: `getQuizDraft`.
+
+### Parameters
+
+| Location | Name | Required | Type |
+| --- | --- | --- | --- |
+| path | `draftId` | yes | string |
+| header | `Authorization` | yes | `Bearer <accessToken>` |
+
+### Sample request
+
+Use `BASE_URL=http://localhost:3000` and a real access token. UUIDs below are illustrative; replace them with IDs returned by the API.
+
+```sh
+curl -i -X GET "$BASE_URL/quiz-drafts/11111111-1111-4111-8111-111111111111" -H "Authorization: Bearer $TOKEN"
+```
+
+### Responses
+
+#### 200 — Operation succeeded.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "userId": "11111111-1111-4111-8111-111111111111",
+  "quizId": "44444444-4444-4444-8444-444444444444",
+  "answers": [],
+  "currentQuestionId": null,
+  "revision": 0,
+  "createdAt": "2026-11-01T10:00:00.000Z",
+  "updatedAt": "2026-11-01T10:00:00.000Z",
+  "submittedAttemptId": null
+}
+```
+
+#### 400 — Invalid request parameters or body.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 400,
+  "message": "Request validation failed",
+  "errorCode": "validation_error"
+}
+```
+
+#### 401 — Missing or invalid credentials.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "errorCode": "missing_credentials"
+}
+```
+
+#### 404 — Resource not found, including resources owned by another user.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Resource not found",
+  "errorCode": "not_found"
+}
+```
+
+#### 500 — Unexpected server failure.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error"
+}
+```
+
+## PUT /quiz-drafts/{draftId}
+
+**Replace a draft snapshot using its current revision**
+
+Replace a draft snapshot using its current revision
+
+Operation ID: `saveQuizDraft`.
+
+### Parameters
+
+| Location | Name | Required | Type |
+| --- | --- | --- | --- |
+| path | `draftId` | yes | string |
+| header | `Authorization` | yes | `Bearer <accessToken>` |
+
+### Sample request
+
+Use `BASE_URL=http://localhost:3000` and a real access token. UUIDs below are illustrative; replace them with IDs returned by the API.
+
+```sh
+curl -i -X PUT "$BASE_URL/quiz-drafts/11111111-1111-4111-8111-111111111111" -H "Authorization: Bearer $TOKEN"
+```
+
+### Responses
+
+#### 200 — Operation succeeded.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "userId": "11111111-1111-4111-8111-111111111111",
+  "quizId": "44444444-4444-4444-8444-444444444444",
+  "answers": [],
+  "currentQuestionId": null,
+  "revision": 0,
+  "createdAt": "2026-11-01T10:00:00.000Z",
+  "updatedAt": "2026-11-01T10:00:00.000Z",
+  "submittedAttemptId": null
+}
+```
+
+#### 400 — Invalid request parameters or body.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 400,
+  "message": "Request validation failed",
+  "errorCode": "validation_error"
+}
+```
+
+#### 401 — Missing or invalid credentials.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "errorCode": "missing_credentials"
+}
+```
+
+#### 404 — Resource not found, including resources owned by another user.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Resource not found",
+  "errorCode": "not_found"
+}
+```
+
+#### 409 — Operation conflicts with resource state, uniqueness or assessment history.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 409,
+  "message": "Operation conflicts with resource state",
+  "errorCode": "conflict"
+}
+```
+
+#### 500 — Unexpected server failure.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error"
+}
+```
+
+## POST /quiz-drafts/{draftId}/submit
+
+**Atomically grade a draft; repeat submissions return the same result**
+
+Atomically grade a draft; repeat submissions return the same result
+
+Operation ID: `submitQuizDraft`.
+
+### Parameters
+
+| Location | Name | Required | Type |
+| --- | --- | --- | --- |
+| path | `draftId` | yes | string |
+| header | `Authorization` | yes | `Bearer <accessToken>` |
+
+### Sample request
+
+Use `BASE_URL=http://localhost:3000` and a real access token. UUIDs below are illustrative; replace them with IDs returned by the API.
+
+```sh
+curl -i -X POST "$BASE_URL/quiz-drafts/11111111-1111-4111-8111-111111111111/submit" -H "Authorization: Bearer $TOKEN"
+```
+
+### Responses
+
+#### 200 — Operation succeeded.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "quizId": "44444444-4444-4444-8444-444444444444",
+  "quizDisplayName": "Transactions quiz",
+  "materialId": "33333333-3333-4333-8333-333333333333",
+  "workspaceId": "22222222-2222-4222-8222-222222222222",
+  "submittedAt": "2026-11-01T10:00:00.000Z",
+  "totalQuestions": 1,
+  "correctAnswers": 1,
+  "scorePercent": 100,
+  "answers": [
+    {
+      "questionId": "55555555-5555-4555-8555-555555555555",
+      "questionType": "SINGLE_CHOICE",
+      "selectedOptionIds": [
+        "66666666-6666-4666-8666-666666666666"
+      ],
+      "selectedOptionTexts": [
+        "Yes"
+      ],
+      "correctOptionIds": [
+        "66666666-6666-4666-8666-666666666666"
+      ],
+      "correctOptionTexts": [
+        "Yes"
+      ],
+      "questionPosition": 1,
+      "prompt": "Are transactions atomic?",
+      "selectedOptionId": "66666666-6666-4666-8666-666666666666",
+      "selectedOptionText": "Yes",
+      "correctOptionId": "66666666-6666-4666-8666-666666666666",
+      "correctOptionText": "Yes",
+      "isCorrect": true,
+      "explanation": "All changes commit together or roll back."
+    }
+  ]
+}
+```
 
 #### 400 — Invalid request parameters or body.
 

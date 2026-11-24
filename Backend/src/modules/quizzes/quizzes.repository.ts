@@ -1,3 +1,4 @@
+import type { Prisma } from '../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { rethrowPrismaError } from '../../common/prisma/prisma-error.mapper.js';
@@ -13,14 +14,36 @@ import type {
   QuizSummary,
 } from './quizzes.types.js';
 
-const quizSelect = {
-  id: true,
-  materialId: true,
-  displayName: true,
-  createdAt: true,
-  updatedAt: true,
-  _count: { select: { questions: true } },
-} as const;
+const quizSelect = (userId?: string) =>
+  ({
+    id: true,
+    materialId: true,
+    displayName: true,
+    createdAt: true,
+    updatedAt: true,
+    _count: {
+      select: {
+        questions: true,
+        attempts: {
+          where: { userId: userId ?? '00000000-0000-0000-0000-000000000000' },
+        },
+      },
+    },
+    attempts: {
+      where: { userId: userId ?? '00000000-0000-0000-0000-000000000000' },
+      orderBy: { submittedAt: 'desc' as const },
+      take: 1,
+      select: { id: true, scorePercent: true },
+    },
+    drafts: {
+      where: {
+        userId: userId ?? '00000000-0000-0000-0000-000000000000',
+        submittedAttemptId: null,
+      },
+      take: 1,
+      select: { id: true, answersJson: true, updatedAt: true },
+    },
+  }) as const;
 
 export interface QuizGradingQuestion {
   questionType?: QuestionType;
@@ -92,7 +115,7 @@ export class QuizzesRepository {
         orderBy: { createdAt: 'desc' },
         take: query.limit,
         skip: query.offset,
-        select: quizSelect,
+        select: quizSelect(ownerUserId),
       }),
       this.prisma.quiz.count({ where }),
     ]);
@@ -109,7 +132,7 @@ export class QuizzesRepository {
         id: quizId,
         material: { workspace: { ownerUserId } },
       },
-      select: quizSelect,
+      select: quizSelect(ownerUserId),
     });
 
     return row ? toQuizSummary(row) : null;
@@ -183,8 +206,9 @@ export class QuizzesRepository {
   async findOwnedForGrading(
     ownerUserId: string,
     quizId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<QuizForGrading | null> {
-    const row = await this.prisma.quiz.findFirst({
+    const row = await (tx ?? this.prisma).quiz.findFirst({
       where: {
         id: quizId,
         material: { workspace: { ownerUserId } },
@@ -264,7 +288,7 @@ export class QuizzesRepository {
             })),
           },
         },
-        select: quizSelect,
+        select: quizSelect(),
       });
 
       return toQuizSummary(row);
@@ -281,7 +305,7 @@ export class QuizzesRepository {
       const row = await this.prisma.quiz.update({
         where: { id: quizId },
         data: { displayName },
-        select: quizSelect,
+        select: quizSelect(),
       });
 
       return toQuizSummary(row);
@@ -326,7 +350,7 @@ export class QuizzesRepository {
             })),
           },
         },
-        select: quizSelect,
+        select: quizSelect(),
       });
       return toQuizSummary(row);
     });
@@ -353,13 +377,30 @@ function toQuizSummary(row: {
   displayName: string;
   createdAt: Date;
   updatedAt: Date;
-  _count: { questions: number };
+  _count: { questions: number; attempts?: number };
+  attempts?: Array<{ id: string; scorePercent: unknown }>;
+  drafts?: Array<{ id: string; answersJson: unknown; updatedAt: Date }>;
 }): QuizSummary {
   return {
     id: row.id,
     materialId: row.materialId,
     displayName: row.displayName,
     questionCount: row._count.questions,
+    attemptCount: row._count.attempts ?? 0,
+    latestAttemptId: row.attempts?.[0]?.id ?? null,
+    latestScorePercent: row.attempts?.[0]
+      ? Number(row.attempts[0].scorePercent)
+      : null,
+    activeDraft: row.drafts?.[0]
+      ? {
+          id: row.drafts[0].id,
+          answeredCount: (
+            row.drafts[0].answersJson as Array<{ selectedOptionIds: string[] }>
+          ).filter((a) => a.selectedOptionIds.length > 0).length,
+          totalQuestions: row._count.questions,
+          updatedAt: row.drafts[0].updatedAt,
+        }
+      : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

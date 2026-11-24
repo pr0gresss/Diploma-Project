@@ -143,13 +143,20 @@ export interface Quiz {
   materialId: Uuid;
   displayName: string;
   questionCount: number;
+  activeDraft?: { id: string; answeredCount: number; totalQuestions: number; updatedAt: string } | null;
+  attemptCount?: number;
+  latestAttemptId?: string | null;
+  latestScorePercent?: number | null;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }
 
 export type QuizPage = Page<Quiz>;
 
-export interface QuizForTaking extends Quiz {
+export interface QuizForTaking {
+  id: Uuid;
+  materialId: Uuid;
+  displayName: string;
   materialDisplayName: string;
   workspaceId: Uuid;
   questions: Array<{
@@ -261,3 +268,10 @@ export interface ProgressOverview {
 export interface ProgressReport extends Page<QuizProgress> {
   overview: ProgressOverview;
 }
+
+export interface DraftAnswer { questionId: string; selectedOptionIds: string[]; }
+export interface QuizDraft {
+  id: string; quizId: string; answers: DraftAnswer[]; currentQuestionId: string | null;
+  revision: number; createdAt: string; updatedAt: string; submittedAttemptId: string | null;
+}
+export interface SaveQuizDraft { revision: number; answers: DraftAnswer[]; currentQuestionId: string | null; }

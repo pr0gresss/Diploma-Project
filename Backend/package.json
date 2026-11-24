@@ -36,7 +36,12 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:status": "prisma migrate status",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "ai:gateway:setup": "node scripts/codex-gateway.mjs setup",
+    "ai:gateway:start": "node scripts/codex-gateway.mjs start",
+    "ai:gateway:login": "node scripts/codex-gateway.mjs login",
+    "ai:gateway:check": "node scripts/codex-gateway.mjs check",
+    "ai:gateway:model": "node scripts/codex-gateway.mjs model"
   },
   "dependencies": {
     "@nestjs/authentication": "^0.1.7",

@@ -1,3 +1,4 @@
+import type { Prisma } from '../../generated/prisma/client.js';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   ConflictError,
@@ -32,10 +33,12 @@ export class AttemptsService {
     userId: string,
     quizId: string,
     input: SubmitAttemptInput,
+    tx?: Prisma.TransactionClient,
   ): Promise<AttemptResult> {
     const quiz = await this.quizzesRepository.findOwnedForGrading(
       userId,
       quizId,
+      ...(tx ? [tx] : []),
     );
     if (!quiz) throw new NotFoundError('Quiz not found');
     if (!quiz.questions.length)
@@ -126,18 +129,21 @@ export class AttemptsService {
           selected.every((option) => option.isCorrect),
       });
     });
-    const attempt = await this.attemptsRepository.create({
-      userId,
-      quizId,
-      totalQuestions: quiz.questions.length,
-      correctAnswers: feedback.filter((answer) => answer.isCorrect).length,
-      answers: feedback.map((answer) => ({
-        questionId: answer.questionId,
-        selectedOptionId: answer.selectedOptionIds[0],
-        selectedOptionIds: answer.selectedOptionIds,
-        isCorrect: answer.isCorrect,
-      })),
-    });
+    const attempt = await this.attemptsRepository.create(
+      {
+        userId,
+        quizId,
+        totalQuestions: quiz.questions.length,
+        correctAnswers: feedback.filter((answer) => answer.isCorrect).length,
+        answers: feedback.map((answer) => ({
+          questionId: answer.questionId,
+          selectedOptionId: answer.selectedOptionIds[0],
+          selectedOptionIds: answer.selectedOptionIds,
+          isCorrect: answer.isCorrect,
+        })),
+      },
+      ...(tx ? [tx] : []),
+    );
     logEvent(this.logger, 'log', 'quiz_attempt_submitted', {
       attemptId: attempt.id,
       quizId,

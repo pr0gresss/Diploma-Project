@@ -1,3 +1,4 @@
+import { GenerateQuizDialogComponent } from '../../shared/components/generate-quiz-dialog.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,21 +13,20 @@ import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 
-import { findQuizProgress, modeToQuestionTypes, toQuizSummary } from '../../shared/services/adapters';
-import { Material, ProgressReport } from '../../shared/services/api.models';
-import { QuizzesService } from '../../shared/services/quizzes.service';
+import { findQuizProgress, toQuizSummary } from '../../shared/services/adapters';
+import { Material, ProgressReport, Quiz } from '../../shared/services/api.models';
 import { WorkspaceOverviewService } from '../../shared/services/workspace-overview.service';
 import { PlatformState } from '../../shared/layout/platform-state.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { WorkspaceTabsComponent } from '../../shared/components/workspace-tabs.component';
-import type { QuizMode, QuizSummary } from '../../shared/models';
+import type { QuizSummary } from '../../shared/models';
 
 type QuizFilter = 'all' | 'in-progress';
 
 @Component({
   selector: 'app-quizzes-page',
   standalone: true,
-  imports: [RouterLink, IconComponent, WorkspaceTabsComponent],
+  imports: [RouterLink, IconComponent, WorkspaceTabsComponent, GenerateQuizDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './quizzes-page.component.html',
   styleUrl: './quizzes-page.component.scss',
@@ -36,17 +36,14 @@ export class QuizzesPageComponent {
   readonly layout = inject(PlatformState);
 
   private readonly overview = inject(WorkspaceOverviewService);
-  private readonly quizzesService = inject(QuizzesService);
+
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private loadSubscription?: Subscription;
-  private generateSubscription?: Subscription;
+
+  readonly showGenerator = signal(false);
 
   readonly filter = signal<QuizFilter>('all');
-  readonly questionCount = signal(10);
-  readonly questionType = signal<QuizMode>('single');
-  readonly generating = signal(false);
-  readonly generateError = signal('');
 
   readonly quizzes = signal<QuizSummary[]>([]);
   readonly materials = signal<Material[]>([]);
@@ -88,70 +85,64 @@ export class QuizzesPageComponent {
       this.loadSubscription?.unsubscribe();
 
       const overview$ = workspaceId ? this.overview.load(workspaceId) : this.overview.loadAll();
-      this.loadSubscription = overview$
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (overview) => {
-            const materialById = new Map(
-              overview.materials.map((material) => [material.id, material]),
-            );
-            this.materials.set(overview.materials);
-            this.guidesCount.set(overview.guides.length);
-            this.progressReport.set(overview.progress);
-            this.quizzes.set(
-              overview.quizzes.map((quiz) =>
-                toQuizSummary(
-                  quiz,
-                  findQuizProgress(overview.progress, quiz.id),
-                  'single',
-                  materialById.get(quiz.materialId),
-                ),
+      this.loadSubscription = overview$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (overview) => {
+          const materialById = new Map(
+            overview.materials.map((material) => [material.id, material]),
+          );
+          this.materials.set(overview.materials);
+          this.guidesCount.set(overview.guides.length);
+          this.progressReport.set(overview.progress);
+          this.quizzes.set(
+            overview.quizzes.map((quiz) =>
+              toQuizSummary(
+                quiz,
+                findQuizProgress(overview.progress, quiz.id),
+                'single',
+                materialById.get(quiz.materialId),
               ),
-            );
-          },
-          error: () => {
-            this.quizzes.set([]);
-            this.materials.set([]);
-            this.guidesCount.set(0);
-            this.progressReport.set(null);
-          },
-        });
+            ),
+          );
+        },
+        error: () => {
+          this.quizzes.set([]);
+          this.materials.set([]);
+          this.guidesCount.set(0);
+          this.progressReport.set(null);
+        },
+      });
     });
   }
 
+  returnUrl(): string {
+    return this.router.url;
+  }
+
   progress(quiz: QuizSummary): number {
-    return findQuizProgress(this.progressReport(), quiz.id)?.latestScorePercent ?? 0;
-  }
-
-  onQuestionCount(event: Event): void {
-    const raw = Number((event.target as HTMLInputElement).value);
-    this.questionCount.set(Math.min(50, Math.max(1, Math.round(raw) || 1)));
-  }
-
-  onQuestionType(event: Event): void {
-    this.questionType.set((event.target as HTMLSelectElement).value as QuizMode);
+    return quiz.questions ? Math.round(((quiz.answeredCount ?? 0) / quiz.questions) * 100) : 0;
   }
 
   generateQuiz(): void {
-    const materialId = this.materials()[0]?.id;
-    if (!materialId || this.generating()) return;
-
-    this.generateError.set('');
-    this.generating.set(true);
-    this.generateSubscription?.unsubscribe();
-    this.generateSubscription = this.quizzesService
-      .generateQuiz(materialId, {
-        questionCount: this.questionCount(),
-        questionTypes: modeToQuestionTypes(this.questionType()),
-      })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (quiz) => void this.router.navigate(['/quizzes', quiz.id]),
-        error: () => {
-          this.generating.set(false);
-          this.generateError.set('Could not generate the quiz. Try again.');
-        },
+    this.showGenerator.set(true);
+  }
+  generated(results: Quiz[]): void {
+    this.showGenerator.set(false);
+    if (results.length === 1)
+      void this.router.navigate(['/quizzes', results[0].id], {
+        queryParams: { returnUrl: this.router.url },
       });
+    else
+      this.quizzes.update((current) => [
+        ...results.map((quiz) =>
+          toQuizSummary(
+            quiz,
+            undefined,
+            'single',
+            this.materials().find((m) => m.id === quiz.materialId),
+          ),
+        ),
+        ...current,
+      ]);
   }
 
   setFilter(next: QuizFilter): void {

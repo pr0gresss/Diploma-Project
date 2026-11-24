@@ -2978,6 +2978,10 @@
                   "materialId": "33333333-3333-4333-8333-333333333333",
                   "displayName": "Transactions quiz",
                   "questionCount": 1,
+                  "attemptCount": 0,
+                  "latestAttemptId": null,
+                  "latestScorePercent": null,
+                  "activeDraft": null,
                   "createdAt": "2026-11-01T10:00:00.000Z",
                   "updatedAt": "2026-11-01T10:00:00.000Z"
                 }
@@ -3163,6 +3167,10 @@
                       "materialId": "33333333-3333-4333-8333-333333333333",
                       "displayName": "Transactions quiz",
                       "questionCount": 1,
+                      "attemptCount": 0,
+                      "latestAttemptId": null,
+                      "latestScorePercent": null,
+                      "activeDraft": null,
                       "createdAt": "2026-11-01T10:00:00.000Z",
                       "updatedAt": "2026-11-01T10:00:00.000Z"
                     }
@@ -3374,6 +3382,10 @@
                   "materialId": "33333333-3333-4333-8333-333333333333",
                   "displayName": "Transactions quiz",
                   "questionCount": 1,
+                  "attemptCount": 0,
+                  "latestAttemptId": null,
+                  "latestScorePercent": null,
+                  "activeDraft": null,
                   "createdAt": "2026-11-01T10:00:00.000Z",
                   "updatedAt": "2026-11-01T10:00:00.000Z"
                 }
@@ -3649,6 +3661,10 @@
                   "materialId": "33333333-3333-4333-8333-333333333333",
                   "displayName": "Transactions quiz",
                   "questionCount": 1,
+                  "attemptCount": 0,
+                  "latestAttemptId": null,
+                  "latestScorePercent": null,
+                  "activeDraft": null,
                   "createdAt": "2026-11-01T10:00:00.000Z",
                   "updatedAt": "2026-11-01T10:00:00.000Z"
                 }
@@ -3828,6 +3844,578 @@
         "summary": "Delete a quiz without submitted attempts",
         "tags": [
           "Quizzes"
+        ]
+      }
+    },
+    "/quizzes/{quizId}/drafts": {
+      "post": {
+        "description": "Resume or start a personal quiz draft",
+        "operationId": "getOrCreateQuizDraft",
+        "parameters": [
+          {
+            "name": "quizId",
+            "required": true,
+            "in": "path",
+            "description": "Owned resource identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDraft"
+                },
+                "example": {
+                  "id": "11111111-1111-4111-8111-111111111111",
+                  "userId": "11111111-1111-4111-8111-111111111111",
+                  "quizId": "44444444-4444-4444-8444-444444444444",
+                  "answers": [],
+                  "currentQuestionId": null,
+                  "revision": 0,
+                  "createdAt": "2026-11-01T10:00:00.000Z",
+                  "updatedAt": "2026-11-01T10:00:00.000Z",
+                  "submittedAttemptId": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": "Request validation failed",
+                  "errorCode": "validation_error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized",
+                  "errorCode": "missing_credentials"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found, including resources owned by another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Resource not found",
+                  "errorCode": "not_found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Resume or start a personal quiz draft",
+        "tags": [
+          "Quiz drafts"
+        ]
+      }
+    },
+    "/quiz-drafts/{draftId}": {
+      "get": {
+        "description": "Read a personal quiz draft",
+        "operationId": "getQuizDraft",
+        "parameters": [
+          {
+            "name": "draftId",
+            "required": true,
+            "in": "path",
+            "description": "Owned resource identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDraft"
+                },
+                "example": {
+                  "id": "11111111-1111-4111-8111-111111111111",
+                  "userId": "11111111-1111-4111-8111-111111111111",
+                  "quizId": "44444444-4444-4444-8444-444444444444",
+                  "answers": [],
+                  "currentQuestionId": null,
+                  "revision": 0,
+                  "createdAt": "2026-11-01T10:00:00.000Z",
+                  "updatedAt": "2026-11-01T10:00:00.000Z",
+                  "submittedAttemptId": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": "Request validation failed",
+                  "errorCode": "validation_error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized",
+                  "errorCode": "missing_credentials"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found, including resources owned by another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Resource not found",
+                  "errorCode": "not_found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Read a personal quiz draft",
+        "tags": [
+          "Quiz drafts"
+        ]
+      },
+      "put": {
+        "description": "Replace a draft snapshot using its current revision",
+        "operationId": "saveQuizDraft",
+        "parameters": [
+          {
+            "name": "draftId",
+            "required": true,
+            "in": "path",
+            "description": "Owned resource identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "answers": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "questionId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "selectedOptionIds": {
+                          "maxItems": 10,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          }
+                        }
+                      },
+                      "required": [
+                        "questionId",
+                        "selectedOptionIds"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "currentQuestionId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "revision",
+                  "answers",
+                  "currentQuestionId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDraft"
+                },
+                "example": {
+                  "id": "11111111-1111-4111-8111-111111111111",
+                  "userId": "11111111-1111-4111-8111-111111111111",
+                  "quizId": "44444444-4444-4444-8444-444444444444",
+                  "answers": [],
+                  "currentQuestionId": null,
+                  "revision": 0,
+                  "createdAt": "2026-11-01T10:00:00.000Z",
+                  "updatedAt": "2026-11-01T10:00:00.000Z",
+                  "submittedAttemptId": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": "Request validation failed",
+                  "errorCode": "validation_error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized",
+                  "errorCode": "missing_credentials"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found, including resources owned by another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Resource not found",
+                  "errorCode": "not_found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operation conflicts with resource state, uniqueness or assessment history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 409,
+                  "message": "Operation conflicts with resource state",
+                  "errorCode": "conflict"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Replace a draft snapshot using its current revision",
+        "tags": [
+          "Quiz drafts"
+        ]
+      }
+    },
+    "/quiz-drafts/{draftId}/submit": {
+      "post": {
+        "description": "Atomically grade a draft; repeat submissions return the same result",
+        "operationId": "submitQuizDraft",
+        "parameters": [
+          {
+            "name": "draftId",
+            "required": true,
+            "in": "path",
+            "description": "Owned resource identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptResult"
+                },
+                "example": {
+                  "id": "11111111-1111-4111-8111-111111111111",
+                  "quizId": "44444444-4444-4444-8444-444444444444",
+                  "quizDisplayName": "Transactions quiz",
+                  "materialId": "33333333-3333-4333-8333-333333333333",
+                  "workspaceId": "22222222-2222-4222-8222-222222222222",
+                  "submittedAt": "2026-11-01T10:00:00.000Z",
+                  "totalQuestions": 1,
+                  "correctAnswers": 1,
+                  "scorePercent": 100,
+                  "answers": [
+                    {
+                      "questionId": "55555555-5555-4555-8555-555555555555",
+                      "questionType": "SINGLE_CHOICE",
+                      "selectedOptionIds": [
+                        "66666666-6666-4666-8666-666666666666"
+                      ],
+                      "selectedOptionTexts": [
+                        "Yes"
+                      ],
+                      "correctOptionIds": [
+                        "66666666-6666-4666-8666-666666666666"
+                      ],
+                      "correctOptionTexts": [
+                        "Yes"
+                      ],
+                      "questionPosition": 1,
+                      "prompt": "Are transactions atomic?",
+                      "selectedOptionId": "66666666-6666-4666-8666-666666666666",
+                      "selectedOptionText": "Yes",
+                      "correctOptionId": "66666666-6666-4666-8666-666666666666",
+                      "correctOptionText": "Yes",
+                      "isCorrect": true,
+                      "explanation": "All changes commit together or roll back."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": "Request validation failed",
+                  "errorCode": "validation_error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized",
+                  "errorCode": "missing_credentials"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found, including resources owned by another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Resource not found",
+                  "errorCode": "not_found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operation conflicts with resource state, uniqueness or assessment history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 409,
+                  "message": "Operation conflicts with resource state",
+                  "errorCode": "conflict"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponse"
+                },
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Atomically grade a draft; repeat submissions return the same result",
+        "tags": [
+          "Quiz drafts"
         ]
       }
     },
@@ -5341,6 +5929,109 @@
           "content": "# Transactions\n\nTransactions are atomic."
         }
       },
+      "QuizDraft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Resource identifier (UUID)."
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Resource identifier (UUID)."
+          },
+          "quizId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Resource identifier (UUID)."
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "questionId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                  "description": "Resource identifier (UUID)."
+                },
+                "selectedOptionIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "Resource identifier (UUID)."
+                  }
+                }
+              },
+              "required": [
+                "questionId",
+                "selectedOptionIds"
+              ]
+            }
+          },
+          "currentQuestionId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Resource identifier (UUID)."
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "UTC timestamp, serialized as ISO 8601."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "UTC timestamp, serialized as ISO 8601."
+          },
+          "submittedAttemptId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Resource identifier (UUID)."
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "quizId",
+          "answers",
+          "currentQuestionId",
+          "revision",
+          "createdAt",
+          "updatedAt",
+          "submittedAttemptId"
+        ],
+        "example": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "userId": "11111111-1111-4111-8111-111111111111",
+          "quizId": "44444444-4444-4444-8444-444444444444",
+          "answers": [],
+          "currentQuestionId": null,
+          "revision": 0,
+          "createdAt": "2026-11-01T10:00:00.000Z",
+          "updatedAt": "2026-11-01T10:00:00.000Z",
+          "submittedAttemptId": null
+        }
+      },
       "Quiz": {
         "type": "object",
         "properties": {
@@ -5375,6 +6066,58 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "attemptCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "latestAttemptId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Resource identifier (UUID)."
+          },
+          "latestScorePercent": {
+            "nullable": true,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "activeDraft": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                "description": "Resource identifier (UUID)."
+              },
+              "answeredCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "totalQuestions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "UTC timestamp, serialized as ISO 8601."
+              }
+            },
+            "required": [
+              "id",
+              "answeredCount",
+              "totalQuestions",
+              "updatedAt"
+            ]
           }
         },
         "required": [
@@ -5383,13 +6126,21 @@
           "createdAt",
           "updatedAt",
           "materialId",
-          "questionCount"
+          "questionCount",
+          "attemptCount",
+          "latestAttemptId",
+          "latestScorePercent",
+          "activeDraft"
         ],
         "example": {
           "id": "44444444-4444-4444-8444-444444444444",
           "materialId": "33333333-3333-4333-8333-333333333333",
           "displayName": "Transactions quiz",
           "questionCount": 1,
+          "attemptCount": 0,
+          "latestAttemptId": null,
+          "latestScorePercent": null,
+          "activeDraft": null,
           "createdAt": "2026-11-01T10:00:00.000Z",
           "updatedAt": "2026-11-01T10:00:00.000Z"
         }
@@ -6126,6 +6877,10 @@
               "materialId": "33333333-3333-4333-8333-333333333333",
               "displayName": "Transactions quiz",
               "questionCount": 1,
+              "attemptCount": 0,
+              "latestAttemptId": null,
+              "latestScorePercent": null,
+              "activeDraft": null,
               "createdAt": "2026-11-01T10:00:00.000Z",
               "updatedAt": "2026-11-01T10:00:00.000Z"
             }

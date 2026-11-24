@@ -71,7 +71,6 @@ describe('ProcessingJobsService', () => {
       'job',
       'material',
       storage.put.mock.calls[0][0],
-      'Extracted text',
     );
     expect(storage.put.mock.invocationCallOrder[0]).toBeLessThan(
       repository.completeExtraction.mock.invocationCallOrder[0],

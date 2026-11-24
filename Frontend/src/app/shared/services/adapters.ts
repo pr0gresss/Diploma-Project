@@ -100,8 +100,14 @@ export function toQuizSummary(
   mode: QuizMode = 'single',
   material?: Material,
 ): QuizSummary {
-  const status: QuizSummary['status'] = progress?.completedAttempts ? 'In progress' : 'Not started';
-  const meta = progress
+  const status: QuizSummary['status'] = quiz.activeDraft ? 'In progress' : (quiz.attemptCount ?? progress?.completedAttempts ?? 0) > 0 ? 'Completed' : 'Not started';
+  const attempts = quiz.attemptCount ?? progress?.completedAttempts ?? 0;
+  const latestScore = quiz.latestScorePercent ?? progress?.latestScorePercent;
+  const meta = quiz.activeDraft
+    ? quiz.activeDraft.answeredCount + ' of ' + quiz.activeDraft.totalQuestions + ' answered'
+    : attempts > 0
+      ? (latestScore ?? 0) + '% latest score ? ' + attempts + (attempts === 1 ? ' attempt' : ' attempts')
+      : progress
     ? `${progress.latestScorePercent}% latest score  ·  ${progress.completedAttempts} ${progress.completedAttempts === 1 ? 'attempt' : 'attempts'}`
     : `${quiz.questionCount} questions  ·  Mixed types`;
 
@@ -112,6 +118,8 @@ export function toQuizSummary(
     meta,
     questions: quiz.questionCount,
     status,
+    latestAttemptId: quiz.latestAttemptId,
+    answeredCount: quiz.activeDraft?.answeredCount,
     score: progress ? `${progress.latestScorePercent}%` : undefined,
     mode,
   };

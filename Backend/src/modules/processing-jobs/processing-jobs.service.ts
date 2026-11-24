@@ -115,7 +115,6 @@ export class ProcessingJobsService {
         jobId,
         job.materialId,
         extractedTextKey,
-        text,
       );
 
       logEvent(this.logger, 'log', 'processing_job_succeeded', {

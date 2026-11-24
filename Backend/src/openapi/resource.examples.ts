@@ -51,6 +51,10 @@ const quiz = {
   materialId,
   displayName: 'Transactions quiz',
   questionCount: 1,
+  attemptCount: 0,
+  latestAttemptId: null,
+  latestScorePercent: null,
+  activeDraft: null,
   ...dates,
 };
 const attempt = {
@@ -109,6 +113,16 @@ export const resourceExamples: Record<ResourceSchemaName, unknown> = {
   StudyGuideContent: {
     ...guide,
     content: '# Transactions\n\nTransactions are atomic.',
+  },
+  QuizDraft: {
+    id,
+    userId: id,
+    quizId,
+    answers: [],
+    currentQuestionId: null,
+    revision: 0,
+    ...dates,
+    submittedAttemptId: null,
   },
   Quiz: quiz,
   QuizForTaking: {

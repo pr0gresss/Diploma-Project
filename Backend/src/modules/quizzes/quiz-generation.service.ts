@@ -40,9 +40,12 @@ export class QuizGenerationService {
     if (material.processingStatus !== 'READY')
       throw new ConflictError('Generate quizzes only from READY materials');
     const source = await this.materials.readExtractedText(userId, materialId);
-    if (!source.trim() || source.length > this.completions.maxContextChars) {
+    if (!source.trim()) {
+      throw new ValidationError('Extracted text is blank; retry document extraction');
+    }
+    if (source.length > this.completions.maxContextChars) {
       throw new ValidationError(
-        'Generation requires nonblank extracted text within LLM_MAX_CONTEXT_CHARS',
+        `Extracted text has ${source.length} characters; LLM_MAX_CONTEXT_CHARS is ${this.completions.maxContextChars}. Increase the configured limit with room for instructions and schema, or use a shorter document.`,
       );
     }
     const prompt =

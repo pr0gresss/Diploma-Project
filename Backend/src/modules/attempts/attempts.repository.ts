@@ -1,3 +1,4 @@
+import type { Prisma } from '../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { rethrowPrismaError } from '../../common/prisma/prisma-error.mapper.js';
@@ -81,9 +82,12 @@ export class AttemptsRepository {
    * Inserts the attempt and all per-question answers atomically. The score is
    * computed by PostgreSQL from the server-derived counters.
    */
-  async create(data: CreateAttemptData): Promise<CreatedAttempt> {
+  async create(
+    data: CreateAttemptData,
+    tx?: Prisma.TransactionClient,
+  ): Promise<CreatedAttempt> {
     try {
-      return await this.prisma.$transaction(async (transaction) => {
+      const write = async (transaction: Prisma.TransactionClient) => {
         const attempt = await transaction.quizAttempt.create({
           data: {
             quizId: data.quizId,
@@ -129,7 +133,8 @@ export class AttemptsRepository {
           correctAnswers: attempt.correctAnswers,
           scorePercent: Number(attempt.scorePercent),
         };
-      });
+      };
+      return await (tx ? write(tx) : this.prisma.$transaction(write));
     } catch (error) {
       return rethrowPrismaError(error, {
         conflict:
