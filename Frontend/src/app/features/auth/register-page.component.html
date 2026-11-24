@@ -1,0 +1,90 @@
+<main class="auth-page">
+  <section class="auth-intro">
+    <a class="brand" routerLink="/register" aria-label="AI study home">
+      <span class="brand-tile"><app-icon name="book" [size]="20" /></span>
+      <span class="brand-text">
+        <span class="brand-name">ai study</span>
+        <span class="brand-sub">workspace</span>
+      </span>
+    </a>
+
+    <div class="intro-copy">
+      <p class="eyebrow">AI STUDY WORKSPACE</p>
+      <h1 class="serif">A calmer way to study.</h1>
+      <p>
+        Bring your notes, slides, and readings together. Get clear study guides and quizzes made
+        from your own material.
+      </p>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <p class="eyebrow">GET STARTED</p>
+      <h2 class="serif">Create your account</h2>
+      <p class="card-copy">One account for all of your workspaces.</p>
+
+      @if (errorMessage()) {
+        <p class="error-message" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label class="field">
+          <span>Email address</span>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            [class.invalid]="fieldError('email')"
+            [attr.aria-invalid]="fieldError('email') ? 'true' : null"
+            [attr.aria-describedby]="fieldError('email') ? 'register-email-error' : null"
+          />
+          @if (fieldError('email')) {
+            <small class="field-error" id="register-email-error">{{ fieldError('email') }}</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="At least 12 characters"
+            [class.invalid]="fieldError('password')"
+            [attr.aria-invalid]="fieldError('password') ? 'true' : null"
+            [attr.aria-describedby]="fieldError('password') ? 'register-password-error' : null"
+          />
+          @if (fieldError('password')) {
+            <small class="field-error" id="register-password-error">{{ fieldError('password') }}</small>
+          } @else {
+            <small class="field-hint">Use at least 12 characters.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Confirm password</span>
+          <input
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+            placeholder="Enter your password again"
+            [class.invalid]="fieldError('confirmPassword')"
+            [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null"
+            [attr.aria-describedby]="fieldError('confirmPassword') ? 'register-confirm-error' : null"
+          />
+          @if (fieldError('confirmPassword')) {
+            <small class="field-error" id="register-confirm-error">{{ fieldError('confirmPassword') }}</small>
+          }
+        </label>
+
+        <button type="submit" class="submit-btn" [disabled]="submitting()">
+          {{ submitting() ? 'Creating account…' : 'Create account' }}
+        </button>
+      </form>
+
+      <p class="switch-link">Already have an account? <a routerLink="/login">Log in</a></p>
+    </div>
+  </section>
+</main>

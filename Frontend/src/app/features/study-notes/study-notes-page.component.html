@@ -1,0 +1,280 @@
+<main class="page" (window:scroll)="onEditorScroll()">
+      @if (loading()) { <p class="loading-note">Loading your study guides…</p> }
+
+      @if (!guide()) {
+        <div class="page-heading list-heading">
+          <div class="heading-left">
+            <p class="eyebrow">YOUR MATERIALS</p>
+            <h1>{{ listHeading() }}</h1>
+            <p class="list-subtitle">{{ listSubtitle() }}</p>
+          </div>
+          <div class="page-actions">
+            <button type="button" class="btn primary" (click)="openCreateNote()">
+              <img src="/icons/spark-white.svg" width="17" height="17" alt="" aria-hidden="true" /><span>New notes</span>
+            </button>
+          </div>
+        </div>
+
+        @if (isWorkspaceScoped()) {
+          <app-workspace-tabs
+            [workspaceId]="workspaceId()"
+            [filesCount]="materials().length"
+            [notesCount]="guides().length"
+          />
+        }
+
+        <section class="guides-card" aria-labelledby="guides-heading">
+          <div class="guides-header">
+            <h2 id="guides-heading">Your study guides</h2>
+            <span class="badge">{{ guides().length }} {{ guides().length === 1 ? 'guide' : 'guides' }}</span>
+            <div class="guides-tools">
+              <label class="guide-search">
+                <app-icon name="search-small" [size]="18" />
+                <input #guideSearch type="search" [value]="guideQuery()" (input)="onGuideQuery($event)" placeholder="Search guides" aria-label="Search study guides" />
+              </label>
+              <button type="button" class="icon-btn guide-search-toggle" aria-label="Search study guides" (click)="guideSearch.focus()">
+                <app-icon name="search-small" [size]="18" />
+              </button>
+            </div>
+          </div>
+
+          <table class="guide-table">
+            <thead>
+              <tr>
+                <th scope="col" style="width:40%;padding-left:19px;text-align:left">Guide name</th>
+                <th scope="col" style="width:18%;padding-left:19px;text-align:left">Workspace</th>
+                <th scope="col" style="width:22%;padding-left:19px;text-align:left">Source file</th>
+                <th scope="col" style="width:14%;padding-left:19px;text-align:left">Updated</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (guide of filteredGuides(); track guide.id) {
+                <tr>
+                  <td>
+                    <button type="button" class="guide-open" (click)="openGuide(guide)">
+                      <span class="guide-type"><app-icon name="note" [size]="17" /></span>
+                      <span class="guide-meta">
+                        <span class="guide-name">{{ guide.displayName }}</span>
+                        <span class="guide-detail">Study guide · Open to edit</span>
+                      </span>
+                    </button>
+                  </td>
+                  <td>{{ workspaceFor(guide) }}</td>
+                  <td>{{ sourceName(guide) }}</td>
+                  <td>{{ guideUpdated(guide) }}</td>
+                  <td class="row-action">
+                    <button type="button" class="icon-btn" [attr.aria-label]="'Open ' + guide.displayName" (click)="openGuide(guide)">
+                      <app-icon name="chevron-activity" [size]="14" />
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="empty-row">No study guides yet. Generate notes from a file to see them here.</td></tr>
+              }
+            </tbody>
+          </table>
+
+          <div class="guide-cards">
+            @for (guide of filteredGuides(); track guide.id) {
+              <button type="button" class="guide-card" (click)="openGuide(guide)">
+                <span class="guide-type"><app-icon name="note" [size]="17" /></span>
+                <span class="guide-meta">
+                  <span class="guide-name">{{ guide.displayName }}</span>
+                  <span class="guide-detail">{{ workspaceFor(guide) }} · {{ sourceName(guide) }} · {{ guideUpdated(guide) }}</span>
+                </span>
+                <app-icon name="chevron-activity" [size]="14" />
+              </button>
+            } @empty {
+              <p class="empty-row">No study guides yet.</p>
+            }
+          </div>
+        </section>
+      } @else {
+      <div class="page-heading editor-heading">
+        <div class="heading-left">
+          <button type="button" class="back-link" (click)="backToGuides()"><app-icon name="arrow" [size]="16" class="back-arrow"></app-icon>All study notes</button>
+          <div class="title-row">
+            <h1>{{ note().title }}</h1>
+            <button type="button" class="plain-icon mobile-more" aria-label="More note options"><app-icon name="dots" [size]="20"></app-icon></button>
+          </div>
+          <div class="status-row" aria-live="polite">
+            <span class="saved-check"><app-icon name="check" [size]="10"></app-icon></span>
+            <span class="saved-text">{{ statusText() }}</span>
+            <span class="status-meta">·&nbsp; From {{ note().sourceFiles.length }} source files&nbsp; ·&nbsp; {{ wordCount() }} words&nbsp; ·&nbsp; {{ note().updated }}</span>
+            @if (saveError()) {
+              <span class="save-error">{{ saveError() }}</span>
+            }
+          </div>
+        </div>
+        <div class="page-actions">
+          <button type="button" class="btn secondary" [disabled]="saving() || saved()" (click)="saveNote()">
+            <app-icon name="check-green" [size]="15"></app-icon><span>{{ saving() ? 'Saving…' : 'Save' }}</span>
+          </button>
+          <button type="button" class="btn secondary" (click)="exportNotes()">
+            <app-icon name="upload-green" [size]="17"></app-icon><span>Export</span>
+          </button>
+          <button type="button" class="btn primary" (click)="openCreateNote()">
+            <img src="/icons/spark-white.svg" width="17" height="17" alt="" aria-hidden="true" /><span>New notes</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="editor-layout">
+        <div class="editor-column">
+          <article class="editor-card" aria-label="Study note editor">
+            <div class="toolbar" role="toolbar" aria-label="Formatting toolbar">
+              <div class="format-select">
+                <button type="button" class="format-trigger" [attr.aria-expanded]="formatOpen()" (click)="toggleFormatMenu()">
+                  {{ format() }}<app-icon name="chevron" [size]="13" class="down"></app-icon>
+                </button>
+                @if (formatOpen()) {
+                  <div class="format-menu" role="menu" aria-label="Text style">
+                    <button type="button" role="menuitem" (click)="applyFormat('p', 'Normal text')">Normal text</button>
+                    <button type="button" role="menuitem" (click)="applyFormat('h2', 'Heading 1')">Heading 1</button>
+                    <button type="button" role="menuitem" (click)="applyFormat('h3', 'Heading 2')">Heading 2</button>
+                  </div>
+                }
+              </div>
+              <span class="toolbar-separator" aria-hidden="true"></span>
+              <button type="button" class="tool" aria-label="Bold" [attr.aria-pressed]="bold()" (click)="toggleBold()"><span class="bold-glyph">B</span></button>
+              <button type="button" class="tool" aria-label="Italic" [attr.aria-pressed]="italic()" (click)="toggleItalic()"><span class="italic-glyph">I</span></button>
+              <button type="button" class="tool" aria-label="Bulleted list" [attr.aria-pressed]="list()" (click)="toggleList()"><img src="/icons/list.svg" width="18" height="18" alt="" aria-hidden="true" /></button>
+              <button type="button" class="tool" aria-label="Insert link" [attr.aria-pressed]="link()" (click)="toggleLink()"><img src="/icons/link.svg" width="18" height="18" alt="" aria-hidden="true" /></button>
+              <span class="toolbar-separator" aria-hidden="true"></span>
+              <button type="button" class="tool" aria-label="Undo last change" [disabled]="!undoReady()" (click)="undo()"><img src="/icons/undo.svg" width="18" height="18" alt="" aria-hidden="true" /></button>
+              <button type="button" class="tool tool-end" aria-label="Clear formatting" (click)="clearFormatting()"><app-icon name="dots" [size]="18"></app-icon></button>
+            </div>
+
+            @for (current of renderedNote(); track current.id) {
+              <div
+                #editorBody
+                class="note-body"
+                contenteditable="true"
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Study note content"
+                spellcheck="true"
+                (input)="onEditorInput()"
+                (paste)="onEditorPaste($event)"
+                (mouseup)="onEditorInteract()"
+                (keyup)="onEditorInteract()"
+              >
+                <div class="note-paper">
+                  @for (section of current.sections; track section.id) {
+                    <section class="note-section" [id]="'note-section-' + section.id" tabindex="-1">
+                      <h3 class="section-heading" [innerHTML]="renderSectionHeading(section)"></h3>
+
+                      @for (paragraph of section.paragraphs; track $index) {
+                        <div class="body-copy" [innerHTML]="renderParagraph(paragraph)"></div>
+                      }
+
+                      @if (section.keyIdea; as idea) {
+                        <div class="key-idea" contenteditable="false">
+                          <img src="/icons/spark-green.svg" width="18" height="18" alt="" aria-hidden="true" />
+                          <div><span class="idea-label">{{ idea.label }}</span><p [innerHTML]="renderInline(idea.text)"></p></div>
+                        </div>
+                      }
+
+                      @if (section.terms?.length) {
+                        <dl class="terms">
+                          @for (term of section.terms ?? []; track $index) {
+                            <div class="term-row">
+                              <dt [innerHTML]="renderInline(term.term)"></dt>
+                              <dd [innerHTML]="renderInline(term.description)"></dd>
+                            </div>
+                          }
+                        </dl>
+                      }
+
+                      @if (section.checklist?.length) {
+                        <ul class="checklist">
+                          @for (item of section.checklist ?? []; track $index) {
+                            <li>
+                              <label contenteditable="false">
+                                <input type="checkbox" [checked]="item.checked" (change)="toggleCheck()" />
+                                <span [innerHTML]="renderInline(item.text)"></span>
+                              </label>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </section>
+                  }
+                </div>
+              </div>
+            }
+          </article>
+
+          <section class="tablet-ai" aria-label="AI writing assistant">
+            <img src="/icons/spark-large.svg" width="20" height="20" alt="" aria-hidden="true" />
+            <span>Select a passage. Make it clearer.</span>
+            <button type="button" class="btn primary" (click)="toggleSuggestion()">
+              <img src="/icons/spark-white.svg" width="17" height="17" alt="" aria-hidden="true" /><span>Improve with AI</span>
+            </button>
+            @if (suggestionOpen()) {
+              <p class="suggestion">{{ suggestionText }}</p>
+              <button type="button" class="link-button" (click)="insertSuggestion()">Insert suggestion</button>
+            }
+          </section>
+
+          <section class="mobile-ai" aria-label="AI writing assistant">
+            <img src="/icons/spark-green.svg" width="20" height="20" alt="" aria-hidden="true" />
+            <div>
+              <p>A clearer way to say it?</p>
+              <button type="button" class="link-button" (click)="toggleSuggestion()">Improve with AI</button>
+            </div>
+            <app-icon name="arrow" [size]="16"></app-icon>
+            @if (suggestionOpen()) {
+              <div class="mobile-suggestion">
+                <p>{{ suggestionText }}</p>
+                <button type="button" class="link-button" (click)="insertSuggestion()">Insert suggestion</button>
+              </div>
+            }
+          </section>
+        </div>
+
+        <aside class="rail" aria-label="Document details">
+          <nav class="panel outline" aria-label="Document outline">
+            <p class="panel-label">ON THIS PAGE</p>
+            @for (section of outlineSections(); track section.id) {
+              <button
+                type="button"
+                class="outline-item"
+                [class.active]="activeSection() === section.id"
+                [attr.aria-current]="activeSection() === section.id ? 'location' : null"
+                (click)="jumpToSection(section)"
+              >
+                <span class="outline-number">{{ section.number }}</span><span class="outline-title">{{ section.title }}</span>
+              </button>
+            }
+          </nav>
+
+          <section class="panel sources">
+            <h2>Based on</h2>
+            <ul>
+              @for (file of note().sourceFiles; track file.name) {
+                <li>
+                  <img src="/icons/file.svg" width="19" height="19" alt="" aria-hidden="true" />
+                  <span><strong>{{ file.name }}</strong><small>{{ file.pages }}</small></span>
+                </li>
+              }
+            </ul>
+          </section>
+
+        </aside>
+      </div>
+      }
+
+      @if (createNoteOpen()) {
+        <app-create-study-note-dialog
+          [saving]="creatingNote()"
+          [errorMessage]="createNoteError()"
+          [workspaces]="workspaces()"
+          [files]="fileOptions()"
+          [selectedWorkspaceId]="initialWorkspaceId()"
+          (confirm)="confirmCreateNote($event)"
+          (cancel)="closeCreateNote()"
+        />
+      }
+</main>

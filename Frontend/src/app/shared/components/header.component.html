@@ -1,0 +1,176 @@
+<div class="header-root">
+  <header class="topbar">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      @if (isGeneralSection()) {
+        <a class="crumb-current" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+      } @else {
+        <a
+          class="crumb-muted"
+          routerLink="/workspaces"
+          routerLinkActive="crumb-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >Workspaces</a>
+        @if (currentWorkspaceId()) {
+          <app-icon name="chevron-small" [size]="13" />
+          <a
+            class="crumb-current"
+            [routerLink]="workspaceLink()"
+            routerLinkActive="crumb-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >{{ currentLabel() }}</a>
+        }
+        @if (sectionLabel()) {
+          <app-icon name="chevron-small" [size]="13" />
+          <a class="crumb-page" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+        }
+      }
+    </nav>
+
+    <div class="tablet-crumb">
+      @if (isGeneralSection()) {
+        <a class="crumb-current" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+      } @else {
+        <a
+          class="crumb-muted"
+          routerLink="/workspaces"
+          routerLinkActive="crumb-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >Workspaces</a>
+        @if (currentWorkspaceId()) {
+          <app-icon name="chevron-small" [size]="13" />
+          <div class="workspace-switcher-wrap">
+          <button
+            type="button"
+            class="workspace-switcher"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="workspaceMenuOpen()"
+            (click)="toggleWorkspaceMenu()"
+          >
+            {{ currentLabel() }}
+            <img src="/icons/down.svg" width="14" height="14" alt="" aria-hidden="true" />
+          </button>
+
+          @if (workspaceMenuOpen()) {
+            <div class="workspace-menu" role="menu" aria-label="Switch workspace">
+              @for (workspace of workspaces(); track workspace.id) {
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="workspace-menu-item"
+                  [class.active]="selectedWorkspaceId() === workspace.id"
+                  (click)="selectWorkspace(workspace)"
+                >
+                  <span class="menu-marker" [style.background]="workspace.marker"></span>
+                  <span class="menu-name">{{ workspace.name }}</span>
+                </button>
+              } @empty {
+                <p class="workspace-menu-empty">No workspaces yet</p>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (sectionLabel()) {
+        <app-icon name="chevron-small" [size]="13" />
+        <a class="crumb-page" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+      }
+      }
+    </div>
+
+    <div class="header-actions">
+      <label class="header-search">
+        <app-icon name="search" [size]="16" />
+        <input
+          type="search"
+          [value]="query()"
+          (input)="onQueryInput($event)"
+          placeholder="Search anything..."
+          aria-label="Search"
+        />
+      </label>
+      <button type="button" class="icon-btn tablet-search" aria-label="Search" (click)="searchToggle.emit()">
+        <app-icon name="search" [size]="21" />
+      </button>
+      <button type="button" class="icon-btn help-btn" aria-label="Help">
+        <app-icon name="help" [size]="21" />
+      </button>
+      <button
+        type="button"
+        class="account-btn"
+        [attr.title]="userEmail() ? 'Sign out ' + userEmail() : 'Sign out'"
+        aria-label="Sign out"
+        (click)="signOut.emit()"
+      >
+        {{ userInitial() }}
+      </button>
+    </div>
+  </header>
+
+  @if (searchOpen()) {
+    <div class="header-search-pop">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        [value]="query()"
+        (input)="onQueryInput($event)"
+        placeholder="Search anything..."
+        aria-label="Search"
+      />
+    </div>
+  }
+
+  <header class="mobile-topbar">
+    <a class="brand" routerLink="/workspaces" aria-label="AI study workspace home">
+      <span class="brand-tile"><app-icon name="book" [size]="18" /></span>
+      <span class="brand-text">
+        <span class="brand-name">ai study</span>
+        <span class="brand-sub">workspace</span>
+      </span>
+    </a>
+    <button
+      type="button"
+      class="account-btn"
+      [attr.title]="userEmail() ? 'Sign out ' + userEmail() : 'Sign out'"
+      aria-label="Sign out"
+      (click)="signOut.emit()"
+    >
+      {{ userInitial() }}
+    </button>
+    <button type="button" class="bare-btn" aria-label="Search" (click)="searchToggle.emit()">
+      <app-icon name="search" [size]="20" />
+    </button>
+    <button type="button" class="bare-btn" aria-label="Open menu" (click)="menuToggle.emit()">
+      <img src="/icons/menu.svg" width="20" height="20" alt="" aria-hidden="true" />
+    </button>
+  </header>
+
+  @if (searchOpen()) {
+    <div class="mobile-search">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        [value]="query()"
+        (input)="onQueryInput($event)"
+        placeholder="Search anything..."
+        aria-label="Search"
+      />
+    </div>
+  }
+
+  <header class="mobile-subbar">
+    <span class="crumb-current">{{ isGeneralSection() ? sectionLabel() : (currentWorkspaceId() ? currentLabel() : 'Workspaces') }}</span>
+    @if (!isGeneralSection() && currentWorkspaceId()) {
+      <app-icon name="chevron-activity" [size]="14" />
+      <span class="subbar-view">{{ sectionLabel() || 'Files' }}</span>
+    }
+  </header>
+
+  @if (workspaceMenuOpen()) {
+    <button
+      type="button"
+      class="workspace-menu-backdrop"
+      aria-label="Close workspace menu"
+      (click)="closeWorkspaceMenu()"
+    ></button>
+  }
+</div>

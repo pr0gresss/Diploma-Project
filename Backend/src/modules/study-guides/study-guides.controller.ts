@@ -13,11 +13,13 @@ import { CurrentUser } from '@nestjs/authentication';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ApiEndpoint } from '../../openapi/api-endpoint.decorator.js';
 import {
+  guideContentSchema,
   guideInputSchema,
   pageSchema,
   renameSchema,
   uuidSchema,
   type GuideBody,
+  type GuideContentBody,
   type ListQuery,
   type RenameBody,
 } from '../../common/http/request.schemas.js';
@@ -101,6 +103,23 @@ export class StudyGuidesController {
     @Body({ schema: renameSchema }) body: RenameBody,
   ) {
     return this.guides.rename(userId, id, body);
+  }
+
+  @Patch('study-guides/:guideId/content')
+  @ApiEndpoint({
+    id: 'updateStudyGuideContent',
+    summary: 'Replace the Markdown content of a study guide',
+    params: ['guideId'],
+    body: guideContentSchema,
+    response: 'StudyGuide',
+    errors: [404],
+  })
+  updateContent(
+    @CurrentUser('id') userId: string,
+    @Param('guideId', { schema: uuidSchema }) id: string,
+    @Body({ schema: guideContentSchema }) body: GuideContentBody,
+  ) {
+    return this.guides.updateContent(userId, id, body);
   }
 
   @Delete('study-guides/:guideId')

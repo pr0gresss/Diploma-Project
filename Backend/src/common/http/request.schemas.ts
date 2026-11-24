@@ -36,6 +36,7 @@ export const guideInputSchema = z.strictObject({
       'Content exceeds the 5 MiB limit',
     ),
 });
+export const guideContentSchema = guideInputSchema.omit({ displayName: true });
 export const quizInputSchema = z.strictObject({
   displayName: displayName.optional(),
   questions: z
@@ -90,5 +91,6 @@ export type WorkspaceBody = z.infer<typeof workspaceInputSchema>;
 export type RenameBody = z.infer<typeof renameSchema>;
 export type UploadFields = z.infer<typeof uploadFieldsSchema>;
 export type GuideBody = z.infer<typeof guideInputSchema>;
+export type GuideContentBody = z.infer<typeof guideContentSchema>;
 export type QuizBody = z.infer<typeof quizInputSchema>;
 export type AttemptBody = z.infer<typeof attemptInputSchema>;

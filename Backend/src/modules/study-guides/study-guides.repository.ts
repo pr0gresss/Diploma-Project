@@ -106,6 +106,21 @@ export class StudyGuidesRepository {
     }
   }
 
+  async touch(guideId: string): Promise<GuideSummary> {
+    try {
+      return await this.prisma.studyGuide.update({
+        where: { id: guideId },
+        data: { updatedAt: new Date() },
+        select: guideSelect,
+      });
+    } catch (error) {
+      return rethrowPrismaError(error, {
+        notFound: 'Study guide not found',
+        validation: 'The study guide metadata is invalid',
+      });
+    }
+  }
+
   async delete(guideId: string): Promise<void> {
     try {
       await this.prisma.studyGuide.delete({

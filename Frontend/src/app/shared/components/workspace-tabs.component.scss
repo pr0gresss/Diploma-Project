@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.tabs {
+  display: flex;
+  gap: 26px;
+  height: 33px;
+  margin: 24px 0 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs a {
+  position: relative;
+  padding: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.tabs a.active {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.tabs a.active::after {
+  content: '';
+  position: absolute;
+  left: -3px;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--brand);
+}
+
+@media (max-width: 699px) {
+  .tabs {
+    gap: 18px;
+  }
+
+  .tabs a.active::after {
+    width: 65px;
+  }
+}

@@ -1,0 +1,40 @@
+<div class="dialog-backdrop" (click)="cancel.emit()"></div>
+
+<div
+  class="dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="create-workspace-title"
+  (keydown.escape)="cancel.emit()"
+>
+  <p class="eyebrow">NEW WORKSPACE</p>
+  <h2 id="create-workspace-title" class="serif">Create a workspace</h2>
+  <p class="dialog-copy">Give it a title so you can find it later.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label class="field">
+      <span>Workspace title</span>
+      <input
+        #titleInput
+        type="text"
+        formControlName="title"
+        maxlength="80"
+        placeholder="e.g. Cell biology"
+        autocomplete="off"
+        [class.invalid]="titleError()"
+        [attr.aria-invalid]="titleError() ? 'true' : null"
+        [attr.aria-describedby]="titleError() ? 'workspace-title-error' : 'workspace-title-hint'"
+      />
+      @if (titleError()) {
+        <small class="field-error" id="workspace-title-error">{{ titleError() }}</small>
+      } @else {
+        <small class="field-hint" id="workspace-title-hint">Up to 80 characters.</small>
+      }
+    </label>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn secondary" (click)="cancel.emit()">Cancel</button>
+      <button type="submit" class="btn primary">Create workspace</button>
+    </div>
+  </form>
+</div>

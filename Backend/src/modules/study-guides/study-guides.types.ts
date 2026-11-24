@@ -11,6 +11,10 @@ export interface RenameGuideInput {
   displayName: string;
 }
 
+export interface UpdateGuideContentInput {
+  content: string;
+}
+
 export interface GuideSummary {
   id: string;
   materialId: string;

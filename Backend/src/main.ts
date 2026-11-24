@@ -11,10 +11,11 @@ async function bootstrap() {
     bufferLogs: true,
   });
   configureHttp(app);
+  app.enableCors({ origin: 'http://localhost:4200' });
 
   app.useLogger(
     new ConsoleLogger({
-      json: true,
+      json: false,
       flattenParams: true,
       redact: ['password', 'passwordHash', 'accessToken', 'refreshToken'],
     }),

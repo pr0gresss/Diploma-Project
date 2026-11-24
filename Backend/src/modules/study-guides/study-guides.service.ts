@@ -20,6 +20,7 @@ import type {
   GuideSummary,
   GuideWithContent,
   RenameGuideInput,
+  UpdateGuideContentInput,
 } from './study-guides.types.js';
 
 const MAX_GUIDE_CONTENT_BYTES = 5 * 1024 * 1024;
@@ -134,6 +135,32 @@ export class StudyGuidesService {
     });
 
     return guide;
+  }
+
+  async updateContent(
+    ownerUserId: string,
+    guideId: string,
+    input: UpdateGuideContentInput,
+  ): Promise<GuideSummary> {
+    const guide = await this.findOwnedOrThrow(ownerUserId, guideId);
+    const content = input.content.trim();
+
+    if (!content) {
+      throw new ValidationError('Study guide content must not be blank');
+    }
+    if (Buffer.byteLength(content, 'utf8') > MAX_GUIDE_CONTENT_BYTES) {
+      throw new ValidationError('Study guide content exceeds the 5 MiB limit');
+    }
+
+    await this.storage.put(guide.storageKey, content);
+    const updated = await this.studyGuidesRepository.touch(guideId);
+
+    logEvent(this.logger, 'log', 'study_guide_content_updated', {
+      guideId,
+      ownerUserId,
+    });
+
+    return updated;
   }
 
   async delete(ownerUserId: string, guideId: string): Promise<void> {

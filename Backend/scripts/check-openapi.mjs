@@ -59,7 +59,7 @@ try {
       .filter((method) => item[method])
       .map((method) => ({ path, method, ...item[method] })),
   );
-  assert.equal(operations.length, 34);
+  assert.equal(operations.length, 35);
   assert.equal(
     new Set(operations.map((operation) => operation.operationId)).size,
     operations.length,

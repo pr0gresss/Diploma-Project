@@ -1,0 +1,20 @@
+<nav class="tabs" aria-label="Workspace views">
+  <a
+    [routerLink]="filesLink()"
+    [class.active]="layout.activeTab() === 'files'"
+    [attr.aria-current]="layout.activeTab() === 'files' ? 'page' : null"
+    (click)="layout.setTab('files')"
+  >Files&nbsp; {{ filesCount() }}</a>
+  <a
+    [routerLink]="notesLink()"
+    [class.active]="layout.activeTab() === 'notes'"
+    [attr.aria-current]="layout.activeTab() === 'notes' ? 'page' : null"
+    (click)="layout.setTab('notes')"
+  >Study notes&nbsp; {{ notesCount() }}</a>
+  <a
+    [routerLink]="quizzesLink()"
+    [class.active]="layout.activeTab() === 'quizzes'"
+    [attr.aria-current]="layout.activeTab() === 'quizzes' ? 'page' : null"
+    (click)="layout.setTab('quizzes')"
+  >Quizzes&nbsp; {{ quizzesCount() }}</a>
+</nav>

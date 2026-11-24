@@ -28,6 +28,7 @@ Generated from controller decorators. Do not edit manually; run `npm run docs:ge
 | GET | `/study-guides/{guideId}` | `getStudyGuide` | Bearer JWT |
 | PATCH | `/study-guides/{guideId}` | `renameStudyGuide` | Bearer JWT |
 | DELETE | `/study-guides/{guideId}` | `deleteStudyGuide` | Bearer JWT |
+| PATCH | `/study-guides/{guideId}/content` | `updateStudyGuideContent` | Bearer JWT |
 | POST | `/materials/{materialId}/quizzes/generate` | `generateQuiz` | Bearer JWT |
 | GET | `/materials/{materialId}/quizzes` | `listQuizzes` | Bearer JWT |
 | POST | `/materials/{materialId}/quizzes` | `createQuiz` | Bearer JWT |
@@ -2077,6 +2078,92 @@ curl -i -X DELETE "$BASE_URL/study-guides/11111111-1111-4111-8111-111111111111" 
 #### 204 — Deleted successfully; no response body.
 
 No response body.
+
+#### 400 — Invalid request parameters or body.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 400,
+  "message": "Request validation failed",
+  "errorCode": "validation_error"
+}
+```
+
+#### 401 — Missing or invalid credentials.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "errorCode": "missing_credentials"
+}
+```
+
+#### 404 — Resource not found, including resources owned by another user.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Resource not found",
+  "errorCode": "not_found"
+}
+```
+
+#### 500 — Unexpected server failure.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error"
+}
+```
+
+## PATCH /study-guides/{guideId}/content
+
+**Replace the Markdown content of a study guide**
+
+Replace the Markdown content of a study guide
+
+Operation ID: `updateStudyGuideContent`.
+
+### Parameters
+
+| Location | Name | Required | Type |
+| --- | --- | --- | --- |
+| path | `guideId` | yes | string |
+| header | `Authorization` | yes | `Bearer <accessToken>` |
+
+### Sample request
+
+Use `BASE_URL=http://localhost:3000` and a real access token. UUIDs below are illustrative; replace them with IDs returned by the API.
+
+```sh
+curl -i -X PATCH "$BASE_URL/study-guides/11111111-1111-4111-8111-111111111111/content" -H "Authorization: Bearer $TOKEN"
+```
+
+### Responses
+
+#### 200 — Operation succeeded.
+
+Content-Type: `application/json`.
+
+```json
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "materialId": "33333333-3333-4333-8333-333333333333",
+  "displayName": "Transactions study guide",
+  "createdAt": "2026-11-01T10:00:00.000Z",
+  "updatedAt": "2026-11-01T10:00:00.000Z"
+}
+```
 
 #### 400 — Invalid request parameters or body.
 

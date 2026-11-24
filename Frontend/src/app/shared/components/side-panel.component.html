@@ -1,0 +1,105 @@
+<div class="side-panel-root">
+  <aside class="sidebar" [class.mobile-open]="mobileMenuOpen()" aria-label="Workspace navigation">
+    <div class="brand-row">
+      <a class="brand" routerLink="/workspaces" (click)="navSelect.emit('workspaces')" aria-label="AI study workspace home">
+        <span class="brand-tile"><app-icon name="book" [size]="20" /></span>
+        <span class="brand-text">
+          <span class="brand-name">ai study</span>
+          <span class="brand-sub">workspace</span>
+        </span>
+      </a>
+      <button type="button" class="close-menu" aria-label="Close menu" (click)="menuClose.emit()">✕</button>
+    </div>
+
+    <nav class="side-nav" aria-label="Workspace sections">
+      <a
+        class="side-link"
+        routerLink="/workspaces"
+        [class.active]="activeNav() === 'workspaces'"
+        (click)="navSelect.emit('workspaces')"
+      >
+        <app-icon name="grid" [size]="20" /><span class="nav-label">My workspaces</span>
+      </a>
+      <a
+        class="side-link"
+        routerLink="/study-notes"
+        [class.active]="activeNav() === 'notes'"
+        (click)="navSelect.emit('notes')"
+      >
+        <app-icon name="note" [size]="20" /><span class="nav-label">My notes</span>
+      </a>
+      <a
+        class="side-link"
+        routerLink="/quizzes"
+        [class.active]="activeNav() === 'quizzes'"
+        (click)="navSelect.emit('quizzes')"
+      >
+        <app-icon name="quiz" [size]="20" /><span class="nav-label">My quizzes</span>
+      </a>
+    </nav>
+
+    <div class="section-label">
+      <span>YOUR WORKSPACES</span>
+      <button type="button" class="bare-btn" aria-label="Add workspace" (click)="openCreateDialog()">
+        <app-icon name="plus" [size]="14" />
+      </button>
+    </div>
+
+    <nav class="workspace-list" aria-label="Your workspaces">
+      @for (workspace of workspaces(); track workspace.id) {
+        <button
+          type="button"
+          class="workspace-btn"
+          [class.active]="selectedWorkspaceId() === workspace.id"
+          (click)="workspaceSelect.emit(workspace)"
+        >
+          <span class="marker" [style.background]="workspace.marker"></span>
+          <span class="workspace-name">{{ workspace.name }}</span>
+        </button>
+      }
+    </nav>
+
+    <button type="button" class="new-workspace" aria-label="New workspace" (click)="openCreateDialog()">
+      <app-icon name="plus-small" [size]="17" /><span class="nav-label">New workspace</span>
+    </button>
+
+    <div class="account">
+      <app-icon name="settings" [size]="19" />
+      <span class="nav-label">Settings</span>
+    </div>
+  </aside>
+
+  <nav class="bottom-nav" aria-label="Mobile navigation">
+    <a
+      class="bottom-btn"
+      routerLink="/workspaces"
+      [class.active]="activeTab() === 'files'"
+      (click)="tabSelect.emit('files')"
+    >
+      <app-icon name="grid" [size]="20" /><span>Workspaces</span>
+    </a>
+    <a
+      class="bottom-btn"
+      routerLink="/study-notes"
+      [class.active]="activeTab() === 'notes'"
+      (click)="tabSelect.emit('notes')"
+    >
+      <app-icon name="note-activity" [size]="20" /><span>Notes</span>
+    </a>
+    <a
+      class="bottom-btn"
+      routerLink="/quizzes"
+      [class.active]="activeTab() === 'quizzes'"
+      (click)="tabSelect.emit('quizzes')"
+    >
+      <app-icon name="quiz-activity" [size]="20" /><span>Quizzes</span>
+    </a>
+  </nav>
+
+  @if (createDialogOpen()) {
+    <app-create-workspace-dialog
+      (cancel)="closeCreateDialog()"
+      (confirm)="confirmCreateWorkspace($event)"
+    />
+  }
+</div>

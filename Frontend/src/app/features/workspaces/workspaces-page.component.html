@@ -1,0 +1,44 @@
+<main class="content">
+  <section class="intro">
+    <div class="intro-copy">
+      <p class="eyebrow">YOUR LIBRARY</p>
+      <h1>My workspaces</h1>
+      <p class="intro-description">Choose a workspace to open its files, notes and quizzes.</p>
+    </div>
+    <button type="button" class="new-workspace-btn" (click)="openCreateWorkspace()">
+      <app-icon name="plus-white" [size]="16" /><span>New workspace</span>
+    </button>
+  </section>
+
+  @if (layout.loadingWorkspaces()) {
+    <p class="state-message">Loading workspaces…</p>
+  } @else if (layout.workspaces().length) {
+    <section class="workspace-cards" aria-label="Workspaces">
+      @for (workspace of layout.workspaces(); track workspace.id) {
+        <a class="workspace-card" [routerLink]="['/workspaces', workspace.id]">
+          <span class="card-marker" [style.background]="workspace.marker"></span>
+          <span class="card-body">
+            <strong class="card-name">{{ workspace.name }}</strong>
+            <span class="card-caption">Files, notes and quizzes</span>
+          </span>
+          <span class="card-action">Enter workspace <app-icon name="arrow" [size]="15" /></span>
+        </a>
+      }
+    </section>
+  } @else {
+    <div class="empty-state">
+      <p class="empty-title">No workspaces yet</p>
+      <p class="empty-hint">Create your first workspace to start collecting course material.</p>
+      <button type="button" class="new-workspace-btn" (click)="openCreateWorkspace()">
+        New workspace
+      </button>
+    </div>
+  }
+
+  @if (createDialogOpen()) {
+    <app-create-workspace-dialog
+      (cancel)="closeCreateWorkspace()"
+      (confirm)="confirmCreateWorkspace($event)"
+    />
+  }
+</main>

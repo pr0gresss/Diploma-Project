@@ -1,0 +1,142 @@
+<main class="session">
+  <div class="session-head">
+    <a class="back" routerLink="/quizzes"><img src="/icons/arrow.svg" width="15" height="15" alt="" aria-hidden="true" />All quizzes</a>
+    <h1 class="serif">{{ title() }}</h1>
+    <p>A little practice. A lot of confidence. You’ve got this.</p>
+    <a class="new-quiz" routerLink="/quizzes"><img src="/icons/spark-white.svg" width="17" height="17" alt="" aria-hidden="true" />New quiz</a>
+  </div>
+
+  @if (errorMessage()) {
+    <p class="error-message" role="alert">{{ errorMessage() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="loading-message">Loading your quiz…</p>
+  } @else if (quiz()) {
+    @if (finished()) {
+      <section class="summary" aria-labelledby="summary-title">
+        <p class="eyebrow">QUIZ COMPLETE</p>
+        <h2 class="serif" id="summary-title">Nice work.</h2>
+        <p class="summary-copy">You got {{ score() }} of {{ total() }} correct.</p>
+        <div class="score-card">
+          <span class="score-value serif">{{ score() }}/{{ total() }}</span>
+          <p>Questions answered</p>
+          <span class="score-detail">{{ completedCount() }} of {{ total() }} complete</span>
+        </div>
+        <ul class="review">
+          @for (item of questions(); track item.id; let i = $index) {
+            <li [class.good]="results()[i] === true" [class.bad]="results()[i] === false">
+              <span class="review-mark">{{ results()[i] === true ? '✓' : '✕' }}</span>
+              <div>
+                <strong>{{ item.prompt }}</strong>
+                <p>Correct answer: {{ correctAnswerText(item) }}</p>
+                <p>{{ feedbackFor(item)?.explanation }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+        <div class="summary-actions">
+          <a class="button outline" routerLink="/quizzes">Back to quizzes</a>
+          <button type="button" class="button primary" (click)="reset()">Try again</button>
+        </div>
+      </section>
+    } @else {
+      <div class="runner-grid">
+        <section class="question-card" aria-labelledby="question-prompt">
+          <div class="question-meta">
+            <span>QUESTION {{ index() + 1 }} OF {{ total() }}</span>
+            <span>{{ completedCount() }} of {{ total() }} completed</span>
+          </div>
+          <div class="progress-track" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progress()"><span [style.width.%]="progress()"></span></div>
+          <div class="question-toolbar">
+            <span class="type-chip">{{ modeLabel() }}</span>
+            <app-icon name="note-activity" [size]="18" label="Flag question" />
+          </div>
+          <h2 class="serif prompt" id="question-prompt">{{ question().prompt }}</h2>
+          <p class="hint">{{ helpText() }}</p>
+
+          <form (submit)="onSubmit($event)">
+            @switch (mode()) {
+              @case ('single') {
+                <div class="answers" role="radiogroup" [attr.aria-label]="question().prompt">
+                  @for (option of question().options; track option; let i = $index) {
+                    <label class="answer" [class.selected]="selection().includes(i)" [class.correct]="checked() && isCorrectOption(i)" [class.wrong]="checked() && selection().includes(i) && !isCorrectOption(i)">
+                      <input type="radio" name="answer" [value]="i" [checked]="selection().includes(i)" [disabled]="checked()" (change)="onOptionChange(i, $event)" [attr.aria-label]="'Answer ' + i + ': ' + option" />
+                      <span>{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              }
+              @case ('dropdown') {
+                <div class="dropdown-wrap">
+                  <select class="dropdown" [value]="selection()[0] ?? ''" [disabled]="checked()" (change)="onDropdown($event)" aria-label="Choose an answer">
+                    <option value="" disabled>Select an answer</option>
+                    @for (option of question().options; track option; let i = $index) {
+                      <option [value]="i">{{ option }}</option>
+                    }
+                  </select>
+                  <img src="/icons/down.svg" width="13" height="13" alt="" aria-hidden="true" />
+                </div>
+              }
+              @case ('multi') {
+                <div class="answers" aria-label="Answer options">
+                  @for (option of question().options; track option; let i = $index) {
+                    <label class="answer" [class.selected]="selection().includes(i)" [class.correct]="checked() && isCorrectOption(i)" [class.wrong]="checked() && selection().includes(i) && !isCorrectOption(i)">
+                      <input type="checkbox" name="answer" [value]="i" [checked]="selection().includes(i)" [disabled]="checked()" (change)="onOptionChange(i, $event)" [attr.aria-label]="'Answer ' + i + ': ' + option" />
+                      <span>{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              }
+            }
+
+            @if (checked()) {
+              <div class="feedback" [class.good]="correct()" [class.bad]="!correct()" role="status">
+                @if (feedbackFor(question()); as feedback) {
+                  <strong>{{ feedback.isCorrect ? 'Correct' : 'Not quite' }}</strong>
+                  <p>{{ feedback.explanation }}</p>
+                  @if (!feedback.isCorrect) { <p class="answer-key">Correct answer: {{ correctAnswerText(question()) }}</p> }
+                } @else {
+                  <strong>Answer recorded</strong>
+                  <p>Full feedback arrives with your result.</p>
+                }
+              </div>
+            }
+
+            <div class="question-actions">
+              <button type="button" class="button outline" (click)="previous()" [disabled]="index() === 0">Previous question</button>
+              <button type="submit" class="button primary" [disabled]="submitting()">{{ primaryLabel() }}<app-icon name="arrow-white" [size]="16" /></button>
+            </div>
+            <p class="key-hint">Press Enter to check your answer</p>
+          </form>
+        </section>
+
+        <aside class="side-cards" aria-label="Quiz tools">
+          <section class="panel navigator">
+            <h2>Your progress</h2>
+            <p>One question at a time.</p>
+            <div class="tiles">
+              @for (i of questionNumbers(); track i) {
+                <button type="button" class="tile" [class.done]="isAnswered(i)" [class.current]="index() === i" (click)="goTo(i)" [attr.aria-label]="'Go to question ' + (i + 1)">
+                  @if (isAnswered(i) && index() !== i) { <app-icon name="check" [size]="16" /> } @else { {{ i + 1 }} }
+                </button>
+              }
+            </div>
+            <p class="legend">✓  Answered&nbsp;&nbsp;&nbsp;&nbsp;●  Current</p>
+          </section>
+          <section class="panel settings">
+            <h2>Make it your own</h2>
+            <p>Settings for this quiz</p>
+            <dl><dt>Questions</dt><dd>{{ total() }}</dd><dt>Difficulty</dt><dd>Adaptive</dd><dt>Question type</dt><dd>{{ modeLabel() }}</dd></dl>
+            <a class="button primary" routerLink="/quizzes"><img src="/icons/spark-white.svg" width="17" height="17" alt="" aria-hidden="true" />Generate new quiz</a>
+          </section>
+          <section class="panel source">
+            <app-icon name="note" [size]="20" />
+            <h2 class="serif">From your files, for your goals.</h2>
+            <p>Based on {{ materialName() }}.</p>
+          </section>
+        </aside>
+      </div>
+    }
+  }
+</main>

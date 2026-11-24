@@ -1,0 +1,71 @@
+<main class="auth-page">
+  <section class="auth-intro">
+    <a class="brand" routerLink="/login" aria-label="AI study home">
+      <span class="brand-tile"><app-icon name="book" [size]="20" /></span>
+      <span class="brand-text">
+        <span class="brand-name">ai study</span>
+        <span class="brand-sub">workspace</span>
+      </span>
+    </a>
+
+    <div class="intro-copy">
+      <p class="eyebrow">AI STUDY WORKSPACE</p>
+      <h1 class="serif">Pick up where you left off.</h1>
+      <p>
+        Turn your course material into study notes and quizzes, then practice until it sticks.
+      </p>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <p class="eyebrow">WELCOME BACK</p>
+      <h2 class="serif">Log in to your workspace</h2>
+      <p class="card-copy">Use the email and password for your account.</p>
+
+      @if (errorMessage()) {
+        <p class="error-message" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label class="field">
+          <span>Email address</span>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            [class.invalid]="fieldError('email')"
+            [attr.aria-invalid]="fieldError('email') ? 'true' : null"
+            [attr.aria-describedby]="fieldError('email') ? 'login-email-error' : null"
+          />
+          @if (fieldError('email')) {
+            <small class="field-error" id="login-email-error">{{ fieldError('email') }}</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            [class.invalid]="fieldError('password')"
+            [attr.aria-invalid]="fieldError('password') ? 'true' : null"
+            [attr.aria-describedby]="fieldError('password') ? 'login-password-error' : null"
+          />
+          @if (fieldError('password')) {
+            <small class="field-error" id="login-password-error">{{ fieldError('password') }}</small>
+          }
+        </label>
+
+        <button type="submit" class="submit-btn" [disabled]="submitting()">
+          {{ submitting() ? 'Signing in…' : 'Log in' }}
+        </button>
+      </form>
+
+      <p class="switch-link">New here? <a routerLink="/register">Create an account</a></p>
+    </div>
+  </section>
+</main>

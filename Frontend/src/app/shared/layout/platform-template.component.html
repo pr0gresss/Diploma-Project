@@ -1,0 +1,40 @@
+<div class="platform-layout">
+  <app-side-panel
+    [workspaces]="state.workspaces()"
+    [selectedWorkspaceId]="state.selectedWorkspace().id"
+    [activeNav]="state.activeNav()"
+    [activeTab]="state.activeTab()"
+    [mobileMenuOpen]="state.mobileMenuOpen()"
+    (workspaceSelect)="openWorkspace($event)"
+    (navSelect)="state.setNav($event)"
+    (tabSelect)="state.setTab($event)"
+    (createWorkspace)="state.createWorkspace($event)"
+    (menuClose)="state.closeMenu()"
+  />
+
+  @if (state.mobileMenuOpen()) {
+    <button type="button" class="sidebar-backdrop" aria-label="Close menu" (click)="state.closeMenu()"></button>
+  }
+
+  <div class="platform-main">
+    <app-header
+      [section]="state.section()"
+      [currentLabel]="state.selectedWorkspace().name"
+      [currentWorkspaceId]="state.selectedWorkspace().id"
+      [query]="state.headerQuery()"
+      [searchOpen]="state.searchOpen()"
+      [userEmail]="auth.user()?.email ?? ''"
+      [workspaces]="state.workspaces()"
+      [selectedWorkspaceId]="state.selectedWorkspace().id"
+      (queryChange)="state.onHeaderQuery($event)"
+      (searchToggle)="state.toggleSearch()"
+      (menuToggle)="state.toggleMenu()"
+      (workspaceSelect)="openWorkspace($event)"
+      (signOut)="signOut()"
+    />
+
+    <div class="platform-content">
+      <router-outlet />
+    </div>
+  </div>
+</div>

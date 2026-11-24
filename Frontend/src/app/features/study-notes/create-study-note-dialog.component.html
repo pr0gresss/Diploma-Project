@@ -1,0 +1,84 @@
+<div class="dialog-backdrop" (click)="cancel.emit()"></div>
+
+<div
+  class="dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="create-study-note-title"
+  (keydown.escape)="cancel.emit()"
+>
+  <p class="eyebrow">NEW STUDY NOTE</p>
+  <h2 id="create-study-note-title" class="serif">Create a study note</h2>
+  <p class="dialog-copy">Give your note a title, then choose a workspace and source file. You can edit the content after it opens.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label class="field">
+      <span>Note title</span>
+      <input
+        #titleInput
+        type="text"
+        formControlName="title"
+        maxlength="80"
+        placeholder="e.g. Cell structure"
+        autocomplete="off"
+        [class.invalid]="titleError()"
+        [attr.aria-invalid]="titleError() ? 'true' : null"
+        [attr.aria-describedby]="titleError() ? 'study-note-title-error' : 'study-note-title-hint'"
+      />
+      @if (titleError()) {
+        <small class="field-error" id="study-note-title-error">{{ titleError() }}</small>
+      } @else {
+        <small class="field-hint" id="study-note-title-hint">Up to 80 characters.</small>
+      }
+    </label>
+
+    <label class="field workspace-field">
+      <span>Workspace</span>
+      <select
+        formControlName="workspaceId"
+        [class.invalid]="workspaceError()"
+        [attr.aria-invalid]="workspaceError() ? 'true' : null"
+        [attr.aria-describedby]="workspaceError() ? 'study-note-workspace-error' : null"
+      >
+        <option value="" disabled>Select a workspace</option>
+        @for (workspace of workspaces(); track workspace.id) {
+          <option [value]="workspace.id">{{ workspace.name }}</option>
+        }
+      </select>
+      @if (workspaceError()) {
+        <small class="field-error" id="study-note-workspace-error">{{ workspaceError() }}</small>
+      }
+    </label>
+
+    <label class="field file-field">
+      <span>Source file</span>
+      <select
+        formControlName="materialId"
+        [class.invalid]="materialError()"
+        [attr.aria-invalid]="materialError() ? 'true' : null"
+        [attr.aria-describedby]="materialError() ? 'study-note-file-error' : null"
+      >
+        <option value="" disabled>Select a file</option>
+        @for (file of availableFiles(); track file.id) {
+          <option [value]="file.id">{{ file.name }}</option>
+        }
+      </select>
+      @if (materialError()) {
+        <small class="field-error" id="study-note-file-error">{{ materialError() }}</small>
+      } @else if (!availableFiles().length) {
+        <small class="field-hint">No files in this workspace yet.</small>
+      }
+    </label>
+
+    @if (errorMessage()) {
+      <p class="dialog-error" role="alert">{{ errorMessage() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="btn secondary" (click)="cancel.emit()">Cancel</button>
+      <button type="submit" class="btn primary" [disabled]="saving()">
+        {{ saving() ? 'Creating…' : 'Create note' }}
+      </button>
+    </div>
+  </form>
+</div>
