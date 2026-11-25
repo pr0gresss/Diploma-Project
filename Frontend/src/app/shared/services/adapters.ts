@@ -18,7 +18,14 @@ import {
 } from './api.models';
 import { parseMarkdownBlocks, stripMarkdown, stripSectionNumber } from './markdown';
 
-const WORKSPACE_MARKERS = ['#5d9874', '#c7a66d', '#7ba69a', '#8aa793', '#a98570', '#708ba9'];
+const WORKSPACE_MARKERS = [
+  'var(--marker-green)',
+  'var(--marker-gold)',
+  'var(--marker-teal)',
+  'var(--marker-sage)',
+  'var(--marker-clay)',
+  'var(--marker-blue)',
+];
 
 function hash(text: string): number {
   return Array.from(text).reduce((value, char) => value + char.charCodeAt(0), 0);
@@ -100,16 +107,23 @@ export function toQuizSummary(
   mode: QuizMode = 'single',
   material?: Material,
 ): QuizSummary {
-  const status: QuizSummary['status'] = quiz.activeDraft ? 'In progress' : (quiz.attemptCount ?? progress?.completedAttempts ?? 0) > 0 ? 'Completed' : 'Not started';
+  const status: QuizSummary['status'] = quiz.activeDraft
+    ? 'In progress'
+    : (quiz.attemptCount ?? progress?.completedAttempts ?? 0) > 0
+      ? 'Completed'
+      : 'Not started';
   const attempts = quiz.attemptCount ?? progress?.completedAttempts ?? 0;
   const latestScore = quiz.latestScorePercent ?? progress?.latestScorePercent;
   const meta = quiz.activeDraft
     ? quiz.activeDraft.answeredCount + ' of ' + quiz.activeDraft.totalQuestions + ' answered'
     : attempts > 0
-      ? (latestScore ?? 0) + '% latest score ? ' + attempts + (attempts === 1 ? ' attempt' : ' attempts')
+      ? (latestScore ?? 0) +
+        '% latest score ? ' +
+        attempts +
+        (attempts === 1 ? ' attempt' : ' attempts')
       : progress
-    ? `${progress.latestScorePercent}% latest score  ·  ${progress.completedAttempts} ${progress.completedAttempts === 1 ? 'attempt' : 'attempts'}`
-    : `${quiz.questionCount} questions  ·  Mixed types`;
+        ? `${progress.latestScorePercent}% latest score  ·  ${progress.completedAttempts} ${progress.completedAttempts === 1 ? 'attempt' : 'attempts'}`
+        : `${quiz.questionCount} questions  ·  Mixed types`;
 
   return {
     id: quiz.id,
@@ -223,9 +237,7 @@ export function noteToMarkdown(note: StudyNote, bodyText?: string): string {
       if (section.keyIdea) blocks.push(`> ${section.keyIdea.text}`);
       if (section.terms?.length) {
         blocks.push(
-          section.terms
-            .map((term) => `- **${term.term}**: ${term.description}`)
-            .join('\n'),
+          section.terms.map((term) => `- **${term.term}**: ${term.description}`).join('\n'),
         );
       }
       if (section.checklist?.length) {

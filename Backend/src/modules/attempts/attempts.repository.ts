@@ -36,9 +36,21 @@ export interface CreatedAttempt {
 }
 
 export interface StoredAttempt extends AttemptSummary {
+  quizQuestions: Array<{
+    id: string;
+    questionType?: QuestionType;
+    position: number;
+    prompt: string;
+    explanation: string | null;
+    options: Array<{
+      id: string;
+      optionText: string;
+      isCorrect: boolean;
+    }>;
+  }>;
   answers: Array<{
     questionId: string;
-    selectedOptionId: string;
+    selectedOptionId: string | null;
     isCorrect: boolean;
     question: {
       questionType?: QuestionType;
@@ -53,7 +65,7 @@ export interface StoredAttempt extends AttemptSummary {
     };
     option: {
       optionText: string;
-    };
+    } | null;
     selections?: Array<{
       selectedOptionId: string;
       option: { optionText: string };
@@ -105,25 +117,31 @@ export class AttemptsRepository {
           },
         });
 
-        await transaction.quizAttemptAnswer.createMany({
-          data: data.answers.map((answer) => ({
-            attemptId: attempt.id,
-            quizId: data.quizId,
-            questionId: answer.questionId,
-            selectedOptionId: answer.selectedOptionId,
-            isCorrect: answer.isCorrect,
-          })),
-        });
+        const answered = data.answers.filter(
+          (answer) => answer.selectedOptionIds.length > 0,
+        );
 
-        await transaction.quizAttemptAnswerSelection.createMany({
-          data: data.answers.flatMap((answer) =>
-            answer.selectedOptionIds.map((selectedOptionId) => ({
+        if (answered.length > 0) {
+          await transaction.quizAttemptAnswer.createMany({
+            data: answered.map((answer) => ({
               attemptId: attempt.id,
+              quizId: data.quizId,
               questionId: answer.questionId,
-              selectedOptionId,
+              selectedOptionId: answer.selectedOptionId,
+              isCorrect: answer.isCorrect,
             })),
-          ),
-        });
+          });
+
+          await transaction.quizAttemptAnswerSelection.createMany({
+            data: answered.flatMap((answer) =>
+              answer.selectedOptionIds.map((selectedOptionId) => ({
+                attemptId: attempt.id,
+                questionId: answer.questionId,
+                selectedOptionId,
+              })),
+            ),
+          });
+        }
 
         return {
           id: attempt.id,
@@ -176,6 +194,31 @@ export class AttemptsRepository {
       where: { id: attemptId, userId },
       select: {
         ...attemptSummarySelect,
+        quiz: {
+          select: {
+            displayName: true,
+            materialId: true,
+            material: { select: { workspaceId: true } },
+            questions: {
+              orderBy: { position: 'asc' },
+              select: {
+                id: true,
+                questionType: true,
+                position: true,
+                prompt: true,
+                explanation: true,
+                options: {
+                  orderBy: { position: 'asc' },
+                  select: {
+                    id: true,
+                    optionText: true,
+                    isCorrect: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         answers: {
           select: {
             questionId: true,
@@ -217,6 +260,7 @@ export class AttemptsRepository {
 
     return {
       ...toAttemptSummary(row),
+      quizQuestions: row.quiz.questions,
       answers: row.answers,
     };
   }

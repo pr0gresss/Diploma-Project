@@ -22,11 +22,24 @@ import { PlatformState } from '../../shared/layout/platform-state.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { WorkspaceTabsComponent } from '../../shared/components/workspace-tabs.component';
 import { FileKind, WorkspaceFile } from '../../shared/models';
+import { DeleteWorkspaceDialogComponent } from './delete-workspace-dialog.component';
+import { RenameWorkspaceDialogComponent } from './rename-workspace-dialog.component';
+import { RenameFileDialogComponent } from './rename-file-dialog.component';
+import { DeleteFileDialogComponent } from './delete-file-dialog.component';
 
 @Component({
   selector: 'app-workspace-page',
   standalone: true,
-  imports: [RouterLink, IconComponent, WorkspaceTabsComponent, GenerateQuizDialogComponent],
+  imports: [
+    RouterLink,
+    IconComponent,
+    WorkspaceTabsComponent,
+    GenerateQuizDialogComponent,
+    RenameWorkspaceDialogComponent,
+    DeleteWorkspaceDialogComponent,
+    RenameFileDialogComponent,
+    DeleteFileDialogComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './workspace-page.component.html',
   styleUrl: './workspace-page.component.scss',
@@ -88,6 +101,24 @@ export class WorkspacePageComponent {
 
   readonly fileQuery = signal('');
   readonly dragging = signal(false);
+  readonly menuOpen = signal(false);
+  readonly menuStyle = signal<Record<string, string>>({});
+  readonly fileMenuOpen = signal(false);
+  readonly fileMenuTarget = signal<WorkspaceFile | null>(null);
+  readonly fileMenuStyle = signal<Record<string, string>>({});
+  readonly activeFileMenu = computed(() => (this.fileMenuOpen() ? this.fileMenuTarget() : null));
+  readonly renameFileOpen = signal(false);
+  readonly renamingFile = signal(false);
+  readonly renameFileError = signal('');
+  readonly deleteFileOpen = signal(false);
+  readonly deletingFile = signal(false);
+  readonly deleteFileError = signal('');
+  readonly renameOpen = signal(false);
+  readonly renaming = signal(false);
+  readonly renameError = signal('');
+  readonly deleteOpen = signal(false);
+  readonly deleting = signal(false);
+  readonly deleteError = signal('');
 
   constructor() {
     effect(() => {
@@ -163,6 +194,213 @@ export class WorkspacePageComponent {
     else void this.router.navigate(['/workspaces', this.workspaceId(), 'quizzes']);
   }
 
+  toggleMenu(event: Event): void {
+    if (!this.menuOpen()) {
+      const button = event.currentTarget as HTMLElement;
+      const rect = button.getBoundingClientRect();
+      const menuWidth = 180;
+      const gap = 8;
+      const top = `${rect.bottom + gap}px`;
+
+      if (button.classList.contains('mobile-more')) {
+        const right = Math.max(12, window.innerWidth - rect.right);
+        this.menuStyle.set({
+          position: 'fixed',
+          top,
+          right: `${right}px`,
+          left: 'auto',
+        });
+      } else {
+        const left = Math.max(12, Math.min(rect.left, window.innerWidth - menuWidth - 12));
+        this.menuStyle.set({
+          position: 'fixed',
+          top,
+          left: `${left}px`,
+        });
+      }
+    }
+
+    this.menuOpen.update((open) => !open);
+  }
+
+  closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
+  toggleFileMenu(file: WorkspaceFile, event: Event): void {
+    if (this.fileMenuOpen() && this.fileMenuTarget()?.id === file.id) {
+      this.fileMenuOpen.set(false);
+      return;
+    }
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 180;
+    const gap = 8;
+    const preferredLeft = rect.right - menuWidth;
+    const left = Math.max(12, Math.min(preferredLeft, window.innerWidth - menuWidth - 12));
+
+    this.fileMenuTarget.set(file);
+    this.fileMenuStyle.set({
+      position: 'fixed',
+      top: `${rect.bottom + gap}px`,
+      left: `${left}px`,
+    });
+    this.fileMenuOpen.set(true);
+  }
+
+  closeFileMenu(): void {
+    this.fileMenuOpen.set(false);
+  }
+
+  openRenameFile(): void {
+    if (!this.fileMenuTarget() || this.renamingFile()) return;
+    this.closeFileMenu();
+    this.renameFileError.set('');
+    this.renameFileOpen.set(true);
+  }
+
+  closeRenameFile(): void {
+    if (this.renamingFile()) return;
+    this.renameFileOpen.set(false);
+  }
+
+  confirmRenameFile(name: string): void {
+    const file = this.fileMenuTarget();
+    if (!file || !name || this.renamingFile()) return;
+
+    this.renamingFile.set(true);
+    this.renameFileError.set('');
+
+    this.materials
+      .renameMaterial(file.id, name)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (material) => {
+          this.files.update((files) =>
+            files.map((item) =>
+              item.id === file.id ? { ...item, name: material.displayName } : item,
+            ),
+          );
+          this.generationMaterials.update((items) =>
+            items.map((item) =>
+              item.id === material.id ? { ...item, displayName: material.displayName } : item,
+            ),
+          );
+          this.renamingFile.set(false);
+          this.renameFileOpen.set(false);
+        },
+        error: (error: unknown) => {
+          this.renameFileError.set(this.apiErrorMessage(error, 'Rename failed. Please try again.'));
+          this.renamingFile.set(false);
+        },
+      });
+  }
+
+  openDeleteFile(): void {
+    if (!this.fileMenuTarget() || this.deletingFile()) return;
+    this.closeFileMenu();
+    this.deleteFileError.set('');
+    this.deleteFileOpen.set(true);
+  }
+
+  closeDeleteFile(): void {
+    if (this.deletingFile()) return;
+    this.deleteFileOpen.set(false);
+  }
+
+  confirmDeleteFile(): void {
+    const file = this.fileMenuTarget();
+    if (!file || this.deletingFile()) return;
+
+    const workspaceId = this.workspaceId();
+    this.deletingFile.set(true);
+    this.deleteFileError.set('');
+
+    this.materials
+      .deleteMaterial(file.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.deletingFile.set(false);
+          this.deleteFileOpen.set(false);
+          this.fileMenuTarget.set(null);
+          this.loadOverview(workspaceId);
+        },
+        error: (error: unknown) => {
+          this.deleteFileError.set(this.apiErrorMessage(error, 'Delete failed. Please try again.'));
+          this.deletingFile.set(false);
+        },
+      });
+  }
+
+  openRename(): void {
+    this.closeMenu();
+    this.renameError.set('');
+    this.renameOpen.set(true);
+  }
+
+  closeRename(): void {
+    if (this.renaming()) return;
+    this.renameOpen.set(false);
+  }
+
+  confirmRename(name: string): void {
+    const workspaceId = this.layout.selectedWorkspace().id;
+    if (!workspaceId || this.renaming()) return;
+
+    this.renaming.set(true);
+    this.renameError.set('');
+
+    this.layout
+      .renameWorkspace(workspaceId, name)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.renaming.set(false);
+          this.renameOpen.set(false);
+        },
+        error: (error: unknown) => {
+          this.renameError.set(this.apiErrorMessage(error, 'Rename failed. Please try again.'));
+          this.renaming.set(false);
+        },
+      });
+  }
+
+  openDelete(): void {
+    this.closeMenu();
+    this.deleteError.set('');
+    this.deleteOpen.set(true);
+  }
+
+  closeDelete(): void {
+    if (this.deleting()) return;
+    this.deleteOpen.set(false);
+  }
+
+  confirmDelete(): void {
+    const workspaceId = this.layout.selectedWorkspace().id;
+    if (!workspaceId || this.deleting()) return;
+
+    this.deleting.set(true);
+    this.deleteError.set('');
+
+    this.layout
+      .deleteWorkspace(workspaceId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.deleting.set(false);
+          this.deleteOpen.set(false);
+          void this.router.navigate(['/workspaces']);
+        },
+        error: (error: unknown) => {
+          this.deleteError.set(this.apiErrorMessage(error, 'Delete failed. Please try again.'));
+          this.deleting.set(false);
+        },
+      });
+  }
+
   kindStyle(kind: FileKind): string {
     const palette =
       kind === 'DOC'
@@ -192,6 +430,11 @@ export class WorkspacePageComponent {
     this.loadingFiles.set(false);
     this.uploading.set(false);
     this.uploadError.set('');
+    this.menuOpen.set(false);
+    this.fileMenuOpen.set(false);
+    this.fileMenuTarget.set(null);
+    this.renameFileOpen.set(false);
+    this.deleteFileOpen.set(false);
   }
 
   private loadOverview(workspaceId: string): void {
@@ -229,7 +472,12 @@ export class WorkspacePageComponent {
       )
       .subscribe({
         error: (error: unknown) => {
-          this.uploadError.set(this.uploadErrorMessage(error));
+          this.uploadError.set(
+            this.apiErrorMessage(
+              error,
+              'Upload failed. Use a PDF or DOCX file under 10 MB and try again.',
+            ),
+          );
           this.uploading.set(false);
           this.loadOverview(workspaceId);
         },
@@ -240,7 +488,7 @@ export class WorkspacePageComponent {
       });
   }
 
-  private uploadErrorMessage(error: unknown): string {
+  private apiErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       const body = error.error as { message?: unknown } | null;
       if (typeof body?.message === 'string' && body.message.trim()) {
@@ -248,6 +496,6 @@ export class WorkspacePageComponent {
       }
     }
 
-    return 'Upload failed. Use a PDF or DOCX file under 10 MB and try again.';
+    return fallback;
   }
 }

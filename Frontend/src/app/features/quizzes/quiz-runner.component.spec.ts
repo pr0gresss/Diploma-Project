@@ -83,6 +83,19 @@ describe('quiz runner draft flow', () => {
   await setup(); choose('o1'); const event=new Event('beforeunload',{cancelable:true}); window.dispatchEvent(event);
   expect(event.defaultPrevented).toBe(true); expect(saves).not.toHaveBeenCalled();
  });
+ it('flushes pending autosave on destroy',async()=>{
+  const fixture=await setup(); choose('o1');
+  fixture.destroy(); await new Promise(resolve=>setTimeout(resolve,0));
+  expect(saves).toHaveBeenCalledTimes(1);
+  expect(saves.mock.calls[0][1].answers[0].selectedOptionIds).toEqual(['o1']);
+ });
+ it('shows Submit on the last question and submits from the main action',async()=>{
+  const fixture=await setup(); choose('o1'); component.goTo(1); choose('o3'); fixture.detectChanges();
+  const nextButton=fixture.nativeElement.querySelector('.question-actions .button.primary') as HTMLButtonElement;
+  expect(nextButton.textContent).toContain('Submit');
+  nextButton.click(); await new Promise(resolve=>setTimeout(resolve,0));
+  expect(submits).toHaveBeenCalledTimes(1);
+ });
  it('rejects deep linked results belonging to another quiz',async()=>{
   await setup('attempt'); expect(component.attempt()).toBeNull(); expect(component.errorMessage()).toContain('could not be loaded');
  });

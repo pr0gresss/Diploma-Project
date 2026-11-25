@@ -51,13 +51,18 @@
             <span [style.width.%]="progress(quiz)"></span>
           </div>
           <div class="card-actions">
-            <a
-              class="button primary"
-              [routerLink]="['/quizzes', quiz.id]"
-              [queryParams]="{ returnUrl: returnUrl() }"
-              >Resume quiz<app-icon name="arrow-white" [size]="17"
-            /></a>
             <p>Your progress is saved automatically.</p>
+            <div class="action-group">
+              <a
+                class="button primary"
+                [routerLink]="['/quizzes', quiz.id]"
+                [queryParams]="{ returnUrl: returnUrl() }"
+                >Resume quiz<app-icon name="arrow-white" [size]="17"
+              /></a>
+              <button type="button" class="button delete" (click)="openDeleteQuiz(quiz)">
+                Delete
+              </button>
+            </div>
           </div>
         </article>
       } @else {
@@ -71,20 +76,25 @@
           <p class="card-meta">{{ quiz.meta }}</p>
           <div class="card-actions">
             <p>Based on your workspace files</p>
-            @if (quiz.latestAttemptId) {
+            <div class="action-group">
+              @if (quiz.latestAttemptId) {
+                <a
+                  class="button outline"
+                  [routerLink]="['/quizzes', quiz.id]"
+                  [queryParams]="{ attemptId: quiz.latestAttemptId, returnUrl: returnUrl() }"
+                  >Review result</a
+                >
+              }
               <a
                 class="button outline"
                 [routerLink]="['/quizzes', quiz.id]"
-                [queryParams]="{ attemptId: quiz.latestAttemptId, returnUrl: returnUrl() }"
-                >Review result</a
+                [queryParams]="{ returnUrl: returnUrl() }"
+                >{{ quiz.status === 'Completed' ? 'Try again' : 'Start quiz' }}</a
               >
-            }
-            <a
-              class="button outline"
-              [routerLink]="['/quizzes', quiz.id]"
-              [queryParams]="{ returnUrl: returnUrl() }"
-              >{{ quiz.status === 'Completed' ? 'Try again' : 'Start quiz' }}</a
-            >
+              <button type="button" class="button delete" (click)="openDeleteQuiz(quiz)">
+                Delete
+              </button>
+            </div>
           </div>
         </article>
       }
@@ -106,8 +116,19 @@
   @if (showGenerator()) {
     <app-generate-quiz-dialog
       [materials]="materials()"
+      [workspaces]="layout.workspaces()"
+      [initialWorkspaceId]="workspaceId()"
       (cancel)="showGenerator.set(false)"
       (generated)="generated($event)"
+    />
+  }
+  @if (deleteQuizTarget(); as quiz) {
+    <app-delete-quiz-dialog
+      [quizTitle]="quiz.title"
+      [deleting]="deletingQuiz()"
+      [error]="deleteQuizError()"
+      (confirm)="confirmDeleteQuiz()"
+      (cancel)="closeDeleteQuiz()"
     />
   }
 </main>

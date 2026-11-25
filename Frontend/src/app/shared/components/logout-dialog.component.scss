@@ -1,0 +1,115 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+}
+
+button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: var(--scrim);
+}
+
+.dialog {
+  position: relative;
+  width: min(100% - 40px, 420px);
+  padding: 30px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: 0 18px 50px var(--ink-shadow-xl);
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+h2 {
+  margin-top: 10px;
+  font-size: 26px;
+}
+
+.dialog-copy {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dialog-email {
+  margin: 14px 0 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-actions {
+  margin-top: 26px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn {
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.btn.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.btn.secondary:hover {
+  border-color: var(--brand-border);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.btn.danger {
+  background: var(--error);
+  color: var(--on-dark);
+}
+
+.btn.danger:hover {
+  filter: brightness(0.94);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 600px) {
+  .dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

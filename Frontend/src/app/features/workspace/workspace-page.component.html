@@ -1,161 +1,542 @@
 <input
-    #fileInput
-    class="file-input"
-    type="file"
-    multiple
-    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    tabindex="-1"
-    aria-hidden="true"
-    (change)="onFilesSelected($event)"
-  />
+  #fileInput
+  class="file-input"
+  type="file"
+  multiple
+  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  tabindex="-1"
+  aria-hidden="true"
+  (change)="onFilesSelected($event)"
+/>
 
-  <main class="content">
-    <section class="intro" style="display:flex;justify-content:space-between;gap:24px">
-      <div class="intro-copy">
-        <p class="eyebrow" style="font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted)">YOUR WORKSPACE</p>
-        <h1 style="font-family:var(--font-serif);font-size:36px;font-weight:400;margin-top:5px">{{ layout.selectedWorkspace().name }}</h1>
-        <p class="intro-description" style="font-size:13px;color:var(--muted);margin-top:6px">Everything you need to turn course material into understanding.</p>
-        <p class="intro-description-mobile">Small pieces. Bigger understanding.</p>
-      </div>
-      <div class="intro-actions" style="display:flex;gap:8px;padding-top:11px">
-        <button type="button" class="more-btn"><app-icon name="dots" [size]="18" /><span>More</span></button>
-        <button type="button" class="upload-btn" [disabled]="uploading()" (click)="fileInput.click()">
-          <app-icon name="upload" [size]="18" /><span>{{ uploading() ? 'Uploading…' : 'Upload files' }}</span>
-        </button>
-        <button type="button" class="bare-btn mobile-more" aria-label="More workspace options">
-          <app-icon name="dots" [size]="22" />
-        </button>
-      </div>
-    </section>
+<main class="content">
+  <section class="intro" style="display: flex; justify-content: space-between; gap: 24px">
+    <div class="intro-copy">
+      <a class="back-link" routerLink="/workspaces"
+        ><app-icon name="arrow" [size]="16" class="back-arrow"></app-icon>All workspaces</a
+      >
+      <p
+        class="eyebrow"
+        style="font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted)"
+      >
+        YOUR WORKSPACE
+      </p>
+      <h1
+        style="font-family: var(--font-serif); font-size: 36px; font-weight: 400; margin-top: 5px"
+      >
+        {{ layout.selectedWorkspace().name }}
+      </h1>
+      <p class="intro-description" style="font-size: 13px; color: var(--muted); margin-top: 6px">
+        Everything you need to turn course material into understanding.
+      </p>
+      <p class="intro-description-mobile">Small pieces. Bigger understanding.</p>
+    </div>
+    <div class="intro-actions" style="display: flex; gap: 8px; padding-top: 11px">
+      <button
+        type="button"
+        class="more-btn"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu($event)"
+      >
+        <app-icon name="dots" [size]="18" /><span>More</span>
+      </button>
+      <button type="button" class="upload-btn" [disabled]="uploading()" (click)="fileInput.click()">
+        <app-icon name="upload" [size]="18" /><span>{{
+          uploading() ? 'Uploading…' : 'Upload files'
+        }}</span>
+      </button>
+      <button
+        type="button"
+        class="bare-btn mobile-more"
+        aria-label="More workspace options"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu($event)"
+      >
+        <app-icon name="dots" [size]="22" />
+      </button>
 
-    <app-workspace-tabs
-      [workspaceId]="workspaceId()"
-      [filesCount]="files().length"
-      [notesCount]="notesCount()"
-      [quizzesCount]="quizzesCount()"
-    />
-
-    <div class="workspace-grid">
-      <section class="files-column" aria-label="Workspace files">
+      @if (menuOpen()) {
         <button
           type="button"
-          class="dropzone"
-          style="width:100%;height:144px;border:1px dashed var(--border-strong);border-radius:12px;background:#fcfcfa;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"
-          [style.border-color]="dragging() ? 'var(--brand)' : null"
-          [style.background]="dragging() ? 'var(--brand-soft)' : null"
-          [class.dragging]="dragging()"
-          (click)="fileInput.click()"
-          (dragover)="onDragOver($event)"
-          (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event)"
+          class="menu-backdrop"
+          aria-label="Close workspace menu"
+          (click)="closeMenu()"
+        ></button>
+        <div
+          class="workspace-action-menu"
+          role="menu"
+          aria-label="Workspace actions"
+          [style]="menuStyle()"
+          (keydown.escape)="closeMenu()"
         >
-          <span class="drop-icon" style="width:42px;height:42px;border-radius:11px;background:var(--brand-soft);display:grid;place-items:center;margin-bottom:3px"><app-icon name="upload-green" [size]="20" /></span>
-          <span class="drop-title" style="font-size:14px;font-weight:500">Drop your files here, or browse files</span>
-          <span class="drop-hint" style="font-size:11px;color:var(--muted)">PDF, DOCX&nbsp; · &nbsp;Up to 10 MB per file</span>
-          <span class="drop-title-mobile">Add a little knowledge</span>
-          <span class="drop-link">Upload files</span>
-          <span class="drop-hint-mobile">PDF, DOCX · Up to 10 MB</span>
-        </button>
+          <button type="button" role="menuitem" (click)="openRename()">Rename</button>
+          <button type="button" role="menuitem" class="danger-action" (click)="openDelete()">
+            Delete
+          </button>
+        </div>
+      }
+    </div>
+  </section>
 
-        @if (uploadError()) {
-          <p class="upload-error" role="alert">{{ uploadError() }}</p>
-        }
+  <app-workspace-tabs
+    [workspaceId]="workspaceId()"
+    [filesCount]="files().length"
+    [notesCount]="notesCount()"
+    [quizzesCount]="quizzesCount()"
+  />
 
-        <section class="files-card" aria-labelledby="files-heading">
-          <div class="files-header">
-            <h2 id="files-heading" style="font-size:16px;font-weight:600">Your files</h2>
-            <span class="badge" style="height:24px;padding:0 10px;border-radius:6px;background:var(--brand-soft);display:inline-grid;place-items:center;color:var(--brand);font-size:10px;white-space:nowrap">{{ selectedCount() }} selected</span>
-            <div class="files-tools">
-              <label class="file-search" style="height:30px;padding:0 8px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;gap:8px;color:var(--muted)">
-                <app-icon name="search-small" [size]="18" />
-                <input #fileSearch type="search" style="width:110px;border:0;outline:0;background:none;font-size:11px" [value]="fileQuery()" (input)="onFileQuery($event)" placeholder="Search files" aria-label="Search files" />
-              </label>
-              <button type="button" class="icon-btn file-search-toggle" aria-label="Search files" (click)="fileSearch.focus()">
-                <app-icon name="search-small" [size]="18" />
-              </button>
-              <button type="button" class="icon-btn" aria-label="More file options"><app-icon name="dots-small" [size]="18" /></button>
-            </div>
+  <div class="workspace-grid">
+    <section class="files-column" aria-label="Workspace files">
+      <button
+        type="button"
+        class="dropzone"
+        style="
+          width: 100%;
+          height: 144px;
+          border: 1px dashed var(--border-strong);
+          border-radius: 12px;
+          background: var(--dropzone);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        "
+        [style.border-color]="dragging() ? 'var(--brand)' : null"
+        [style.background]="dragging() ? 'var(--brand-soft)' : null"
+        [class.dragging]="dragging()"
+        (click)="fileInput.click()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <span
+          class="drop-icon"
+          style="
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            background: var(--brand-soft);
+            display: grid;
+            place-items: center;
+            margin-bottom: 3px;
+          "
+          ><app-icon name="upload-green" [size]="20"
+        /></span>
+        <span class="drop-title" style="font-size: 14px; font-weight: 500"
+          >Drop your files here, or browse files</span
+        >
+        <span class="drop-hint" style="font-size: 11px; color: var(--muted)"
+          >PDF, DOCX&nbsp; · &nbsp;Up to 10 MB per file</span
+        >
+        <span class="drop-title-mobile">Add a little knowledge</span>
+        <span class="drop-link">Upload files</span>
+        <span class="drop-hint-mobile">PDF, DOCX · Up to 10 MB</span>
+      </button>
+
+      @if (uploadError()) {
+        <p class="upload-error" role="alert">{{ uploadError() }}</p>
+      }
+
+      <section class="files-card" aria-labelledby="files-heading">
+        <div class="files-header">
+          <h2 id="files-heading" style="font-size: 16px; font-weight: 600">Your files</h2>
+          <span
+            class="badge"
+            style="
+              height: 24px;
+              padding: 0 10px;
+              border-radius: 6px;
+              background: var(--brand-soft);
+              display: inline-grid;
+              place-items: center;
+              color: var(--brand);
+              font-size: 10px;
+              white-space: nowrap;
+            "
+            >{{ selectedCount() }} selected</span
+          >
+          <div class="files-tools">
+            <label
+              class="file-search"
+              style="
+                height: 30px;
+                padding: 0 8px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--muted);
+              "
+            >
+              <app-icon name="search-small" [size]="18" />
+              <input
+                #fileSearch
+                type="search"
+                style="width: 110px; border: 0; outline: 0; background: none; font-size: 11px"
+                [value]="fileQuery()"
+                (input)="onFileQuery($event)"
+                placeholder="Search files"
+                aria-label="Search files"
+              />
+            </label>
+            <button
+              type="button"
+              class="icon-btn file-search-toggle"
+              aria-label="Search files"
+              (click)="fileSearch.focus()"
+            >
+              <app-icon name="search-small" [size]="18" />
+            </button>
           </div>
-
-          <table class="file-table" style="width:100%;border-collapse:collapse;table-layout:fixed">
-            <thead>
-              <tr style="height:36px;background:var(--surface-row);font-size:9px;letter-spacing:.05em;color:var(--muted)">
-                <th scope="col" style="width:56%;padding-left:19px;text-align:left">File name</th>
-                <th scope="col" style="width:13%;padding-left:19px;text-align:left">Size</th>
-                <th scope="col" style="width:22%;padding-left:19px;text-align:left">Added</th>
-                <th scope="col"><span class="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (file of filteredFiles(); track file.id) {
-                <tr style="font-size:11px;color:var(--muted)" [style.background]="file.selected ? 'var(--surface-selected)' : null">
-                  <td style="height:61px;padding-left:19px;vertical-align:middle">
-                    <div class="file-cell" style="display:flex;align-items:center;gap:10px">
-                      <button type="button" class="file-check" role="checkbox" [attr.aria-checked]="file.selected" [attr.aria-label]="'Select ' + file.name" (click)="toggleFile(file.id)"
-                        style="width:15px;height:15px;border:1px solid var(--border-check);border-radius:4px;display:grid;place-items:center;flex:none"
-                        [style.background]="file.selected ? 'var(--brand)' : '#fff'" [style.border-color]="file.selected ? 'var(--brand)' : null">
-                        @if (file.selected) { <app-icon name="check" [size]="13" /> }
-                      </button>
-                      <span class="file-type" [style]="kindStyle(file.kind)">{{ file.kind }}</span>
-                      <span class="file-meta" style="display:flex;flex-direction:column;min-width:0"><span class="file-name" style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ file.name }}</span><span class="file-detail" style="font-size:10px;color:var(--muted);margin-top:4px">{{ file.detail }}</span></span>
-                    </div>
-                  </td>
-                  <td style="height:61px;padding-left:19px;vertical-align:middle">{{ file.size }}</td>
-                  <td style="height:61px;padding-left:19px;vertical-align:middle">{{ file.added }}</td>
-                  <td class="row-action" style="padding-right:14px;text-align:right">
-                    <button type="button" class="icon-btn" [attr.aria-label]="'Options for ' + file.name"><app-icon name="dots-row" [size]="17" /></button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="4" class="empty-row">No files match your search.</td></tr>
-              }
-            </tbody>
-          </table>
-
-          <div class="file-cards">
-            @for (file of filteredFiles(); track file.id) {
-              <div class="file-card" [class.selected]="file.selected">
-                <span class="file-type" [style]="kindStyle(file.kind)">{{ file.kind }}</span>
-                <div class="file-meta" style="display:flex;flex-direction:column;min-width:0"><span class="file-name" style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ file.name }}</span><span class="file-detail" style="font-size:10px;color:var(--muted);margin-top:4px">{{ file.kind }} · {{ file.size }}</span></div>
-                <button type="button" class="file-check card-check" role="checkbox" [attr.aria-checked]="file.selected" [attr.aria-label]="'Select ' + file.name" (click)="toggleFile(file.id)"
-                  style="width:16px;height:16px;border:1px solid var(--border-check);border-radius:4px;display:grid;place-items:center;flex:none;margin-left:auto"
-                  [style.background]="file.selected ? 'var(--brand)' : '#fff'" [style.border-color]="file.selected ? 'var(--brand)' : null">
-                  @if (file.selected) { <app-icon name="check" [size]="12" /> }
-                </button>
-              </div>
-            } @empty {
-              <p class="empty-row">No files match your search.</p>
-            }
-          </div>
-        </section>
-      </section>
-
-      <section class="studio-column" aria-label="AI study studio">
-        <div class="tool-card quiz-tool" style="height:140px;padding:16px;border-radius:12px;background:var(--brand-tint);display:flex;gap:10px">
-          <span class="tool-icon" style="width:34px;height:34px;border-radius:9px;background:#dde8d7;display:grid;place-items:center;flex:none"><app-icon name="quiz" [size]="18" /></span>
-          <span class="tool-body" style="display:flex;flex:1;flex-direction:column;min-width:0">
-            <strong style="font-size:12px">Know what you know.</strong>
-            <span style="font-size:11px;color:var(--muted);margin-top:4px">Practice with questions made<br />from your own material.</span>
-            <button type="button" class="tool-action" [disabled]="!selectedCount()" (click)="openQuiz()" style="height:32px;width:100%;margin-top:23px;padding:0 12px;border-radius:7px;background:var(--brand-button);display:flex;align-items:center;justify-content:space-between;color:var(--brand-deep);font-size:11px;font-weight:600">Generate quiz <app-icon name="arrow-light" [size]="15" /></button>
-          </span>
         </div>
 
-        @if (resumeQuiz(); as quiz) {
-          <section class="activity-card" aria-labelledby="activity-heading" style="margin-top:1px;padding:16px 17px;border:1px solid var(--border);border-radius:12px;background:var(--surface-raised);font-size:11px">
-            <h2 id="activity-heading" style="font-size:14px;font-weight:600">Pick up where you left off</h2>
-            <a class="activity-item" [routerLink]="['/quizzes', quiz.id]" style="display:flex;align-items:center;gap:12px;padding:15px 0">
-              <app-icon name="quiz-activity" [size]="20" />
-              <span style="display:flex;flex-direction:column;flex:1;min-width:0"><strong style="font-size:11px;font-weight:500">{{ quiz.displayName }}</strong><small style="font-size:10px;color:var(--muted);margin-top:4px">{{ quizMeta(quiz) }}</small></span>
-              <app-icon name="chevron-activity" [size]="14" />
-            </a>
-            <a class="continue-btn" [routerLink]="['/quizzes', quiz.id]" style="height:36px;margin-top:17px;padding:0 16px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:12px">Continue quiz <app-icon name="arrow-white" [size]="16" /></a>
-          </section>
-        }
-      </section>
-    </div>
+        <table
+          class="file-table"
+          style="width: 100%; border-collapse: collapse; table-layout: fixed"
+        >
+          <thead>
+            <tr
+              style="
+                height: 36px;
+                background: var(--surface-row);
+                font-size: 9px;
+                letter-spacing: 0.05em;
+                color: var(--muted);
+              "
+            >
+              <th scope="col" style="width: 56%; padding-left: 19px; text-align: left">
+                File name
+              </th>
+              <th scope="col" style="width: 13%; padding-left: 19px; text-align: left">Size</th>
+              <th scope="col" style="width: 22%; padding-left: 19px; text-align: left">Added</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (file of filteredFiles(); track file.id) {
+              <tr
+                style="font-size: 11px; color: var(--muted)"
+                [style.background]="file.selected ? 'var(--surface-selected)' : null"
+              >
+                <td style="height: 61px; padding-left: 19px; vertical-align: middle">
+                  <div class="file-cell" style="display: flex; align-items: center; gap: 10px">
+                    <button
+                      type="button"
+                      class="file-check"
+                      role="checkbox"
+                      [attr.aria-checked]="file.selected"
+                      [attr.aria-label]="'Select ' + file.name"
+                      (click)="toggleFile(file.id)"
+                      style="
+                        width: 15px;
+                        height: 15px;
+                        border: 1px solid var(--border-check);
+                        border-radius: 4px;
+                        display: grid;
+                        place-items: center;
+                        flex: none;
+                      "
+                      [style.background]="file.selected ? 'var(--brand)' : 'var(--surface-raised)'"
+                      [style.border-color]="file.selected ? 'var(--brand)' : null"
+                    >
+                      @if (file.selected) {
+                        <app-icon name="check" [size]="13" />
+                      }
+                    </button>
+                    <span class="file-type" [style]="kindStyle(file.kind)">{{ file.kind }}</span>
+                    <span
+                      class="file-meta"
+                      style="display: flex; flex-direction: column; min-width: 0"
+                      ><span
+                        class="file-name"
+                        style="
+                          font-size: 12px;
+                          font-weight: 500;
+                          color: var(--ink);
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          white-space: nowrap;
+                        "
+                        >{{ file.name }}</span
+                      ><span
+                        class="file-detail"
+                        style="font-size: 10px; color: var(--muted); margin-top: 4px"
+                        >{{ file.detail }}</span
+                      ></span
+                    >
+                  </div>
+                </td>
+                <td style="height: 61px; padding-left: 19px; vertical-align: middle">
+                  {{ file.size }}
+                </td>
+                <td style="height: 61px; padding-left: 19px; vertical-align: middle">
+                  {{ file.added }}
+                </td>
+                <td class="row-action" style="padding-right: 14px; text-align: right">
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    [attr.aria-label]="'Options for ' + file.name"
+                    [attr.aria-expanded]="fileMenuOpen() && fileMenuTarget()?.id === file.id"
+                    (click)="toggleFileMenu(file, $event)"
+                  >
+                    <app-icon name="dots-row" [size]="17" />
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty-row">No files match your search.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
 
-  </main>
+        <div class="file-cards">
+          @for (file of filteredFiles(); track file.id) {
+            <div class="file-card" [class.selected]="file.selected">
+              <span class="file-type" [style]="kindStyle(file.kind)">{{ file.kind }}</span>
+              <div class="file-meta" style="display: flex; flex-direction: column; min-width: 0">
+                <span
+                  class="file-name"
+                  style="
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: var(--ink);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  "
+                  >{{ file.name }}</span
+                ><span
+                  class="file-detail"
+                  style="font-size: 10px; color: var(--muted); margin-top: 4px"
+                  >{{ file.kind }} · {{ file.size }}</span
+                >
+              </div>
+              <button
+                type="button"
+                class="file-check card-check"
+                role="checkbox"
+                [attr.aria-checked]="file.selected"
+                [attr.aria-label]="'Select ' + file.name"
+                (click)="toggleFile(file.id)"
+                style="
+                  width: 16px;
+                  height: 16px;
+                  border: 1px solid var(--border-check);
+                  border-radius: 4px;
+                  display: grid;
+                  place-items: center;
+                  flex: none;
+                  margin-left: auto;
+                "
+                [style.background]="file.selected ? 'var(--brand)' : 'var(--surface-raised)'"
+                [style.border-color]="file.selected ? 'var(--brand)' : null"
+              >
+                @if (file.selected) {
+                  <app-icon name="check" [size]="12" />
+                }
+              </button>
+              <button
+                type="button"
+                class="icon-btn card-more"
+                [attr.aria-label]="'Options for ' + file.name"
+                [attr.aria-expanded]="fileMenuOpen() && fileMenuTarget()?.id === file.id"
+                (click)="toggleFileMenu(file, $event)"
+              >
+                <app-icon name="dots-row" [size]="18" />
+              </button>
+            </div>
+          } @empty {
+            <p class="empty-row">No files match your search.</p>
+          }
+        </div>
+      </section>
+    </section>
+
+    <section class="studio-column" aria-label="AI study studio">
+      <div
+        class="tool-card quiz-tool"
+        style="
+          padding: 16px;
+          border-radius: 12px;
+          background: var(--brand-tint);
+          display: flex;
+          gap: 10px;
+        "
+      >
+        <span
+          class="tool-icon"
+          style="
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: var(--brand-icon-bg);
+            display: grid;
+            place-items: center;
+            flex: none;
+          "
+          ><app-icon name="quiz" [size]="18"
+        /></span>
+        <span
+          class="tool-body"
+          style="display: flex; flex: 1; flex-direction: column; min-width: 0"
+        >
+          <strong style="font-size: 12px">Know what you know.</strong>
+          <span style="font-size: 11px; color: var(--muted); margin-top: 4px"
+            >Practice with questions made<br />from your own material.</span
+          >
+          <button
+            type="button"
+            class="tool-action"
+            [disabled]="!selectedCount()"
+            (click)="openQuiz()"
+            style="
+              height: 32px;
+              width: 100%;
+              margin-top: auto;
+              padding: 0 12px;
+              border-radius: 7px;
+              background: var(--brand-button);
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              color: var(--brand-deep);
+              font-size: 11px;
+              font-weight: 600;
+            "
+          >
+            Generate quiz <app-icon name="arrow-light" [size]="15" />
+          </button>
+        </span>
+      </div>
+
+      @if (resumeQuiz(); as quiz) {
+        <section
+          class="activity-card"
+          aria-labelledby="activity-heading"
+          style="
+            margin-top: 1px;
+            padding: 16px 17px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface-raised);
+            font-size: 11px;
+          "
+        >
+          <h2 id="activity-heading" style="font-size: 14px; font-weight: 600">
+            Pick up where you left off
+          </h2>
+          <a
+            class="activity-item"
+            [routerLink]="['/quizzes', quiz.id]"
+            style="display: flex; align-items: center; gap: 12px; padding: 15px 0"
+          >
+            <app-icon name="quiz-activity" [size]="20" />
+            <span style="display: flex; flex-direction: column; flex: 1; min-width: 0"
+              ><strong style="font-size: 11px; font-weight: 500">{{ quiz.displayName }}</strong
+              ><small style="font-size: 10px; color: var(--muted); margin-top: 4px">{{
+                quizMeta(quiz)
+              }}</small></span
+            >
+            <app-icon name="chevron-activity" [size]="14" />
+          </a>
+          <a
+            class="continue-btn"
+            [routerLink]="['/quizzes', quiz.id]"
+            style="
+              height: 36px;
+              margin-top: 17px;
+              padding: 0 16px;
+              border-radius: 8px;
+              background: var(--brand);
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              color: var(--on-dark);
+              font-size: 12px;
+            "
+            >Continue quiz <app-icon name="arrow-white" [size]="16"
+          /></a>
+        </section>
+      }
+    </section>
+  </div>
+</main>
 
 @if (showGenerator()) {
-  <app-generate-quiz-dialog [materials]="generationMaterials()" [initialSelection]="selectedMaterialIds()" (cancel)="showGenerator.set(false)" (generated)="generated($event)" />
+  <app-generate-quiz-dialog
+    [materials]="generationMaterials()"
+    [workspaces]="layout.workspaces()"
+    [initialWorkspaceId]="workspaceId()"
+    [initialSelection]="selectedMaterialIds()"
+    (cancel)="showGenerator.set(false)"
+    (generated)="generated($event)"
+  />
+}
+
+@if (activeFileMenu(); as file) {
+  <button
+    type="button"
+    class="menu-backdrop"
+    aria-label="Close file menu"
+    (click)="closeFileMenu()"
+  ></button>
+  <div
+    class="file-action-menu"
+    role="menu"
+    aria-label="File actions"
+    [style]="fileMenuStyle()"
+    (keydown.escape)="closeFileMenu()"
+  >
+    <button type="button" role="menuitem" (click)="openRenameFile()">Change display name</button>
+    <button type="button" role="menuitem" class="danger-action" (click)="openDeleteFile()">
+      Delete file
+    </button>
+  </div>
+}
+
+@if (renameFileOpen()) {
+  <app-rename-file-dialog
+    [currentName]="fileMenuTarget()?.name ?? ''"
+    [saving]="renamingFile()"
+    [error]="renameFileError()"
+    (confirm)="confirmRenameFile($event)"
+    (cancel)="closeRenameFile()"
+  />
+}
+
+@if (deleteFileOpen()) {
+  <app-delete-file-dialog
+    [fileName]="fileMenuTarget()?.name ?? ''"
+    [deleting]="deletingFile()"
+    [error]="deleteFileError()"
+    (confirm)="confirmDeleteFile()"
+    (cancel)="closeDeleteFile()"
+  />
+}
+
+@if (renameOpen()) {
+  <app-rename-workspace-dialog
+    [currentName]="layout.selectedWorkspace().name"
+    [saving]="renaming()"
+    [error]="renameError()"
+    (confirm)="confirmRename($event)"
+    (cancel)="closeRename()"
+  />
+}
+
+@if (deleteOpen()) {
+  <app-delete-workspace-dialog
+    [workspaceName]="layout.selectedWorkspace().name"
+    [deleting]="deleting()"
+    [error]="deleteError()"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDelete()"
+  />
 }

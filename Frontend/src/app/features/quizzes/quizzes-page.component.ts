@@ -1,4 +1,6 @@
 import { GenerateQuizDialogComponent } from '../../shared/components/generate-quiz-dialog.component';
+import { DeleteQuizDialogComponent } from './delete-quiz-dialog.component';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,6 +18,7 @@ import { Subscription } from 'rxjs';
 import { findQuizProgress, toQuizSummary } from '../../shared/services/adapters';
 import { Material, ProgressReport, Quiz } from '../../shared/services/api.models';
 import { WorkspaceOverviewService } from '../../shared/services/workspace-overview.service';
+import { QuizzesService } from '../../shared/services/quizzes.service';
 import { PlatformState } from '../../shared/layout/platform-state.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { WorkspaceTabsComponent } from '../../shared/components/workspace-tabs.component';
@@ -26,7 +29,13 @@ type QuizFilter = 'all' | 'in-progress';
 @Component({
   selector: 'app-quizzes-page',
   standalone: true,
-  imports: [RouterLink, IconComponent, WorkspaceTabsComponent, GenerateQuizDialogComponent],
+  imports: [
+    RouterLink,
+    IconComponent,
+    WorkspaceTabsComponent,
+    GenerateQuizDialogComponent,
+    DeleteQuizDialogComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './quizzes-page.component.html',
   styleUrl: './quizzes-page.component.scss',
@@ -36,12 +45,16 @@ export class QuizzesPageComponent {
   readonly layout = inject(PlatformState);
 
   private readonly overview = inject(WorkspaceOverviewService);
+  private readonly quizzesApi = inject(QuizzesService);
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private loadSubscription?: Subscription;
 
   readonly showGenerator = signal(false);
+  readonly deleteQuizTarget = signal<QuizSummary | null>(null);
+  readonly deletingQuiz = signal(false);
+  readonly deleteQuizError = signal('');
 
   readonly filter = signal<QuizFilter>('all');
 
@@ -69,14 +82,8 @@ export class QuizzesPageComponent {
   }));
 
   readonly visibleQuizzes = computed(() => {
-    const term = this.layout.headerQuery().trim().toLowerCase();
     const filter = this.filter();
-    return this.quizzes().filter((quiz) => {
-      const matchesFilter = filter === 'all' || quiz.status === 'In progress';
-      const matchesTerm =
-        !term || `${quiz.title} ${quiz.subject} ${quiz.meta}`.toLowerCase().includes(term);
-      return matchesFilter && matchesTerm;
-    });
+    return this.quizzes().filter((quiz) => filter === 'all' || quiz.status === 'In progress');
   });
 
   constructor() {
@@ -143,6 +150,60 @@ export class QuizzesPageComponent {
         ),
         ...current,
       ]);
+  }
+
+  openDeleteQuiz(quiz: QuizSummary): void {
+    if (this.deletingQuiz()) return;
+    this.deleteQuizError.set('');
+    this.deleteQuizTarget.set(quiz);
+  }
+
+  closeDeleteQuiz(): void {
+    if (this.deletingQuiz()) return;
+    this.deleteQuizError.set('');
+    this.deleteQuizTarget.set(null);
+  }
+
+  confirmDeleteQuiz(): void {
+    const target = this.deleteQuizTarget();
+    if (!target || this.deletingQuiz()) return;
+
+    this.deletingQuiz.set(true);
+    this.deleteQuizError.set('');
+
+    this.quizzesApi
+      .deleteQuiz(target.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.quizzes.update((current) => current.filter((quiz) => quiz.id !== target.id));
+          this.progressReport.update((report) =>
+            report
+              ? {
+                  ...report,
+                  items: report.items.filter((item) => item.quizId !== target.id),
+                }
+              : report,
+          );
+          this.deletingQuiz.set(false);
+          this.deleteQuizTarget.set(null);
+        },
+        error: (error: unknown) => {
+          this.deleteQuizError.set(this.apiErrorMessage(error, 'Delete failed. Please try again.'));
+          this.deletingQuiz.set(false);
+        },
+      });
+  }
+
+  private apiErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const body = error.error as { message?: unknown } | null;
+      if (typeof body?.message === 'string' && body.message.trim()) {
+        return body.message;
+      }
+    }
+
+    return fallback;
   }
 
   setFilter(next: QuizFilter): void {

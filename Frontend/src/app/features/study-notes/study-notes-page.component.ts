@@ -26,12 +26,14 @@ import {
   stripSectionNumber,
 } from '../../shared/services/markdown';
 import { Material, StudyGuide, StudyGuideContent } from '../../shared/services/api.models';
+import { HeaderSearchService } from '../../shared/services/header-search.service';
 import { StudyGuidesService } from '../../shared/services/study-guides.service';
 import { WorkspaceOverviewService } from '../../shared/services/workspace-overview.service';
 import { PlatformState } from '../../shared/layout/platform-state.service';
 import { StudyNote, StudyNoteSection } from '../../shared/models';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { WorkspaceTabsComponent } from '../../shared/components/workspace-tabs.component';
+import { LoaderComponent } from '../../shared/components/loader.component';
 
 const AI_SUGGESTION =
   'In short, a cell works like a coordinated system: each structure has its own job, and together they keep the cell alive.';
@@ -60,7 +62,7 @@ function emptyNote(): StudyNote {
   selector: 'app-study-notes-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, CreateStudyNoteDialogComponent, WorkspaceTabsComponent],
+  imports: [IconComponent, CreateStudyNoteDialogComponent, WorkspaceTabsComponent, LoaderComponent],
   templateUrl: './study-notes-page.component.html',
   styleUrl: './study-notes-page.component.scss',
 })
@@ -73,13 +75,16 @@ export class StudyNotesPageComponent {
   private readonly layout = inject(PlatformState);
   private readonly overview = inject(WorkspaceOverviewService);
   private readonly studyGuides = inject(StudyGuidesService);
+  private readonly headerSearch = inject(HeaderSearchService);
   private readonly destroyRef = inject(DestroyRef);
   private loadSubscription?: Subscription;
   private guideSubscription?: Subscription;
   private createSubscription?: Subscription;
   private saveSubscription?: Subscription;
+  private renameSubscription?: Subscription;
 
   private readonly editorRef = viewChild<ElementRef<HTMLDivElement>>('editorBody');
+  private readonly renameInputRef = viewChild<ElementRef<HTMLInputElement>>('renameInput');
   private savedRange: Range | null = null;
 
   readonly isWorkspaceScoped = computed(() => !!this.workspaceId());
@@ -136,10 +141,15 @@ export class StudyNotesPageComponent {
   readonly formatOpen = signal(false);
   readonly suggestionOpen = signal(false);
   readonly suggestionText = AI_SUGGESTION;
+  readonly mobileNoteMenuOpen = signal(false);
   readonly loading = signal(false);
   readonly createNoteOpen = signal(false);
   readonly creatingNote = signal(false);
   readonly createNoteError = signal('');
+  readonly renaming = signal(false);
+  readonly renameValue = signal('');
+  readonly renamingSaving = signal(false);
+  readonly renameError = signal('');
 
   constructor() {
     effect(() => {
@@ -147,43 +157,47 @@ export class StudyNotesPageComponent {
       const requestedGuideId = this.guide();
       this.loadSubscription?.unsubscribe();
       this.guideSubscription?.unsubscribe();
+      this.renameSubscription?.unsubscribe();
       this.materials.set([]);
       this.guides.set([]);
       this.activeMaterialId.set(null);
+      this.renaming.set(false);
+      this.renameValue.set('');
+      this.renameError.set('');
+      this.renamingSaving.set(false);
+      this.mobileNoteMenuOpen.set(false);
       this.loading.set(true);
 
       const overview$ = workspaceId ? this.overview.load(workspaceId) : this.overview.loadAll();
-      this.loadSubscription = overview$
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (overview) => {
-            this.materials.set(overview.materials);
-            this.guides.set(overview.guides);
+      this.loadSubscription = overview$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (overview) => {
+          this.materials.set(overview.materials);
+          this.guides.set(overview.guides);
 
-            if (!requestedGuideId) {
-              this.note.set(emptyNote());
-              this.loading.set(false);
-              return;
-            }
+          if (!requestedGuideId) {
+            this.note.set(emptyNote());
+            this.loading.set(false);
+            return;
+          }
 
-            const selected = overview.guides.find((guide) => guide.id === requestedGuideId);
-            if (!selected) {
-              this.note.set(emptyNote());
-              this.loading.set(false);
-              return;
-            }
+          const selected = overview.guides.find((guide) => guide.id === requestedGuideId);
+          if (!selected) {
+            this.note.set(emptyNote());
+            this.loading.set(false);
+            return;
+          }
 
-            this.activeMaterialId.set(selected.materialId);
-            this.guideSubscription = this.studyGuides
-              .getStudyGuide(selected.id)
-              .pipe(takeUntilDestroyed(this.destroyRef))
-              .subscribe({
-                next: (guide) => this.applyGuide(guide, overview.materials),
-                error: () => this.loading.set(false),
-              });
-          },
-          error: () => this.loading.set(false),
-        });
+          this.activeMaterialId.set(selected.materialId);
+          this.guideSubscription = this.studyGuides
+            .getStudyGuide(selected.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (guide) => this.applyGuide(guide, overview.materials),
+              error: () => this.loading.set(false),
+            });
+        },
+        error: () => this.loading.set(false),
+      });
     });
   }
 
@@ -200,6 +214,91 @@ export class StudyNotesPageComponent {
     void this.router.navigate([], { queryParams: { guide: null }, queryParamsHandling: 'merge' });
   }
 
+  toggleMobileNoteMenu(): void {
+    this.mobileNoteMenuOpen.update((open) => !open);
+  }
+
+  saveNoteFromMenu(): void {
+    this.mobileNoteMenuOpen.set(false);
+    this.saveNote();
+  }
+
+  exportNotesFromMenu(): void {
+    this.mobileNoteMenuOpen.set(false);
+    this.exportNotes();
+  }
+
+  startRename(): void {
+    if (!this.guide()) return;
+    this.mobileNoteMenuOpen.set(false);
+    this.renameValue.set(this.note().title);
+    this.renameError.set('');
+    this.renaming.set(true);
+    setTimeout(() => {
+      const input = this.renameInputRef()?.nativeElement;
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  onRenameInput(event: Event): void {
+    this.renameValue.set((event.target as HTMLInputElement).value);
+    this.renameError.set('');
+  }
+
+  cancelRename(): void {
+    if (this.renamingSaving()) return;
+    this.renaming.set(false);
+    this.renameValue.set('');
+    this.renameError.set('');
+  }
+
+  saveRename(): void {
+    const guideId = this.guide();
+    const displayName = this.renameValue().trim();
+    if (!guideId || this.renamingSaving()) return;
+
+    if (!displayName) {
+      this.renameError.set('Enter a name for this note.');
+      return;
+    }
+
+    if (displayName === this.note().title.trim()) {
+      this.cancelRename();
+      return;
+    }
+
+    this.renameError.set('');
+    this.renamingSaving.set(true);
+    this.renameSubscription?.unsubscribe();
+    this.renameSubscription = this.studyGuides
+      .renameStudyGuide(guideId, displayName)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.renamingSaving.set(false);
+          this.renaming.set(false);
+          this.note.update((note) => ({
+            ...note,
+            title: updated.displayName,
+            updated: new Date(updated.updatedAt).toLocaleDateString(),
+          }));
+          this.guides.update((list) =>
+            list.map((item) =>
+              item.id === updated.id
+                ? { ...item, displayName: updated.displayName, updatedAt: updated.updatedAt }
+                : item,
+            ),
+          );
+          this.headerSearch.reset();
+        },
+        error: () => {
+          this.renamingSaving.set(false);
+          this.renameError.set('Could not rename this note. Try again.');
+        },
+      });
+  }
+
   sourceName(selected: StudyGuide): string {
     return (
       this.materials().find((material) => material.id === selected.materialId)?.displayName ??
@@ -208,8 +307,9 @@ export class StudyNotesPageComponent {
   }
 
   workspaceFor(selected: StudyGuide): string {
-    const workspaceId = this.materials().find((material) => material.id === selected.materialId)
-      ?.workspaceId;
+    const workspaceId = this.materials().find(
+      (material) => material.id === selected.materialId,
+    )?.workspaceId;
     return (
       (workspaceId && this.workspaces().find((workspace) => workspace.id === workspaceId)?.name) ||
       'Unknown workspace'
@@ -309,7 +409,11 @@ export class StudyNotesPageComponent {
     editor.focus();
 
     if (!isBlockPaste) {
-      const inserted = this.document.execCommand('insertHTML', false, renderInlineMarkdown(markdown));
+      const inserted = this.document.execCommand(
+        'insertHTML',
+        false,
+        renderInlineMarkdown(markdown),
+      );
       if (!inserted) this.insertPlainText(editor, selection, markdown);
       this.onEditorInput();
       return;
@@ -336,7 +440,9 @@ export class StudyNotesPageComponent {
         lastInserted = this.insertElementAfter(
           paper,
           node,
-          topLevelReference ?? Array.from(paper.querySelectorAll<HTMLElement>('.note-section')).at(-1) ?? null,
+          topLevelReference ??
+            Array.from(paper.querySelectorAll<HTMLElement>('.note-section')).at(-1) ??
+            null,
         );
         topLevelReference = node;
         activeSection = node;
@@ -491,9 +597,10 @@ export class StudyNotesPageComponent {
       return;
     }
     editor.focus();
-    const range = this.savedRange && editor.contains(this.savedRange.commonAncestorContainer)
-      ? this.savedRange.cloneRange()
-      : this.document.createRange();
+    const range =
+      this.savedRange && editor.contains(this.savedRange.commonAncestorContainer)
+        ? this.savedRange.cloneRange()
+        : this.document.createRange();
     if (!this.savedRange || !editor.contains(range.commonAncestorContainer)) {
       range.selectNodeContents(editor);
       range.collapse(false);
@@ -604,14 +711,12 @@ export class StudyNotesPageComponent {
     return Array.from(
       editor.querySelectorAll<HTMLElement>('.note-section, h1, h2, h3, h4, h5, h6'),
     ).filter(
-      (node) => !node.classList.contains('section-heading') && !node.classList.contains('doc-title'),
+      (node) =>
+        !node.classList.contains('section-heading') && !node.classList.contains('doc-title'),
     );
   }
 
-  private applyGuide(
-    guide: StudyGuideContent,
-    materials: Material[],
-  ): void {
+  private applyGuide(guide: StudyGuideContent, materials: Material[]): void {
     const material = materials.find((item) => item.id === guide.materialId);
     const note = studyGuideToNote(
       guide,
@@ -620,6 +725,10 @@ export class StudyNotesPageComponent {
     this.activeMaterialId.set(guide.materialId);
     this.note.set(note);
     this.wordCount.set(note.wordCount);
+    this.renaming.set(false);
+    this.renameValue.set('');
+    this.renameError.set('');
+    this.renamingSaving.set(false);
     this.outlineSections.set([]);
     this.activeSection.set('');
     this.saved.set(true);
@@ -627,6 +736,7 @@ export class StudyNotesPageComponent {
     this.saveError.set('');
     this.suggestionOpen.set(false);
     this.formatOpen.set(false);
+    this.mobileNoteMenuOpen.set(false);
     this.savedRange = null;
     this.loading.set(false);
     this.resetToolbar();

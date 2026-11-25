@@ -1,0 +1,31 @@
+<div class="results" role="listbox" aria-label="Search results">
+  @if (loading()) {
+    <div class="results-state">Searching…</div>
+  } @else if (pending()) {
+    <div class="results-state">Searching in 3s…</div>
+  } @else if (!query().trim()) {
+    <div class="results-state hint">Search workspaces, files, notes and quizzes.</div>
+  } @else if (!results().length) {
+    <div class="results-state empty">No results for “{{ query() }}”.</div>
+  } @else {
+    <p class="results-label">RESULTS</p>
+    @for (result of results(); track result.category + result.id) {
+      <button
+        type="button"
+        role="option"
+        class="result"
+        [attr.aria-selected]="false"
+        (click)="select.emit(result)"
+      >
+        <span class="result-icon" [class]="'result-icon-' + result.category">
+          <app-icon [name]="result.icon" [size]="18" />
+        </span>
+        <span class="result-text">
+          <strong>{{ result.title }}</strong>
+          <small>{{ result.categoryLabel }} · {{ result.subtitle }}</small>
+        </span>
+        <app-icon name="arrow" [size]="14" class="result-arrow" />
+      </button>
+    }
+  }
+</div>

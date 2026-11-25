@@ -53,7 +53,7 @@ export class AttemptsController {
     id: 'submitQuizAttempt',
     summary: 'Submit answers and receive a server-graded result',
     description:
-      'Submit selectedOptionIds for every question: one ID for SINGLE_CHOICE/SELECT, one or more for MULTI_SELECT. Multi-select is correct only when the complete correct set is selected with no extras; order is irrelevant. Legacy selectedOptionId is accepted instead of the array, not alongside it. User ID and score are never accepted. Every submission creates a new attempt; retries are not idempotent.',
+      'Submit selectedOptionIds for answered questions; unanswered questions may be omitted or sent with an empty array and are graded incorrect. Use one ID for SINGLE_CHOICE/SELECT and one or more for MULTI_SELECT. Multi-select is correct only when the complete correct set is selected with no extras; order is irrelevant. Legacy selectedOptionId is accepted instead of the array, not alongside it. User ID and score are never accepted. Every submission creates a new attempt; retries are not idempotent.',
     params: ['quizId'],
     body: attemptInputSchema,
     status: 201,

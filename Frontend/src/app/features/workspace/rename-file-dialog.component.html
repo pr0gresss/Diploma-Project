@@ -1,0 +1,48 @@
+<div class="dialog-backdrop" (click)="cancel.emit()"></div>
+
+<div
+  class="dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="rename-file-title"
+  (keydown.escape)="cancel.emit()"
+>
+  <p class="eyebrow">FILE SETTINGS</p>
+  <h2 id="rename-file-title" class="serif">Change display name</h2>
+  <p class="dialog-copy">Choose how this file appears across your workspace.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label class="field">
+      <span>Display name</span>
+      <input
+        #titleInput
+        type="text"
+        formControlName="name"
+        maxlength="120"
+        placeholder="e.g. Lecture 1 — Cell structure"
+        autocomplete="off"
+        [class.invalid]="nameError()"
+        [attr.aria-invalid]="nameError() ? 'true' : null"
+        [attr.aria-describedby]="nameError() ? 'rename-file-error' : 'rename-file-hint'"
+      />
+      @if (nameError()) {
+        <small class="field-error" id="rename-file-error">{{ nameError() }}</small>
+      } @else {
+        <small class="field-hint" id="rename-file-hint">Up to 120 characters.</small>
+      }
+    </label>
+
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="btn secondary" [disabled]="saving()" (click)="cancel.emit()">
+        Cancel
+      </button>
+      <button type="submit" class="btn primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save changes' }}
+      </button>
+    </div>
+  </form>
+</div>

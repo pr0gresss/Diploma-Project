@@ -1,0 +1,6 @@
+@use './workspace-dialog';
+
+.dialog-copy strong {
+  color: var(--ink);
+  font-weight: 600;
+}

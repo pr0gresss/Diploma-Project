@@ -1,52 +1,187 @@
 <main class="session">
-  <div class="session-head"><a class="back" [routerLink]="backLink">All quizzes</a><h1 class="serif">{{ quiz()?.displayName ?? 'Quiz' }}</h1></div>
-  @if (errorMessage()) { <p class="error-message" role="alert">{{ errorMessage() }}</p> }
-  @if (conflict()) { <button type="button" class="button outline" (click)="reloadDraft()">Reload saved draft</button> }
-  @if (loading()) { <p role="status">Loading your quiz�</p> }
-  @else if (attempt(); as result) {
+  <div class="session-head">
+    <a class="back" [routerLink]="backLink"
+      ><app-icon name="arrow" [size]="16" class="back-arrow"></app-icon>All quizzes</a
+    >
+    <h1 class="serif">{{ quiz()?.displayName ?? 'Quiz' }}</h1>
+  </div>
+  @if (errorMessage()) {
+    <p class="error-message" role="alert">{{ errorMessage() }}</p>
+  }
+  @if (conflict()) {
+    <button type="button" class="button outline" (click)="reloadDraft()">Reload saved draft</button>
+  }
+  @if (loading()) {
+    <p role="status">Loading your quiz&hellip;</p>
+  } @else if (attempt(); as result) {
     <section class="summary" aria-labelledby="summary-title">
       <h2 id="summary-title" tabindex="-1" class="serif">Quiz complete</h2>
-      <p class="summary-copy">{{ result.correctAnswers }} of {{ result.totalQuestions }} correct � {{ result.scorePercent }}%</p>
+      <p class="summary-copy">
+        {{ result.correctAnswers }} of {{ result.totalQuestions }} correct &middot;
+        {{ result.scorePercent }}%
+      </p>
       <ul class="review">
         @for (answer of result.answers; track answer.questionId) {
-          <li [class.good]="answer.isCorrect" [class.bad]="!answer.isCorrect"><div>
-            <strong>{{ answer.prompt }}</strong><p>{{ answer.isCorrect ? 'Correct' : 'Incorrect' }}</p>
-            <p>Your answer: {{ answer.selectedOptionTexts.join(', ') }}</p>
-            <p>Correct answer: {{ answer.correctOptionTexts.join(', ') }}</p>
-            @if (answer.explanation) { <p>{{ answer.explanation }}</p> }
-          </div></li>
+          <li [class.good]="answer.isCorrect" [class.bad]="!answer.isCorrect">
+            <div>
+              <strong>{{ answer.prompt }}</strong>
+              <p>{{ answer.isCorrect ? 'Correct' : 'Incorrect' }}</p>
+              <p>Your answer: {{ answer.selectedOptionTexts.join(', ') }}</p>
+              <p>Correct answer: {{ answer.correctOptionTexts.join(', ') }}</p>
+              @if (answer.explanation) {
+                <p>{{ answer.explanation }}</p>
+              }
+            </div>
+          </li>
         }
       </ul>
-      <div class="summary-actions"><a class="button outline" [routerLink]="backLink">Back to quizzes</a><button type="button" class="button primary" (click)="tryAgain()">Try again</button></div>
+      <div class="summary-actions">
+        <a class="button outline" [routerLink]="backLink">Back to quizzes</a
+        ><button type="button" class="button primary" (click)="tryAgain()">Try again</button>
+      </div>
     </section>
   } @else if (draft() && question()) {
     <div class="runner-grid">
       <section class="question-card" aria-labelledby="question-prompt">
-        <div class="question-meta"><span>QUESTION {{ index() + 1 }} OF {{ total() }}</span><span>{{ completedCount() }} answered</span></div>
-        <div class="progress-track" role="progressbar" aria-label="Questions answered" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progress()"><span [style.width.%]="progress()"></span></div>
+        <div class="question-meta">
+          <span>QUESTION {{ index() + 1 }} OF {{ total() }}</span
+          ><span>{{ completedCount() }} answered</span>
+        </div>
+        <div
+          class="progress-track"
+          role="progressbar"
+          aria-label="Questions answered"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="progress()"
+        >
+          <span [style.width.%]="progress()"></span>
+        </div>
         <span class="type-chip">{{ modeLabel() }}</span>
-        <h2 id="question-prompt" tabindex="-1" class="serif prompt">{{ question().prompt }}</h2><p class="hint">{{ helpText() }}</p>
+        <h2 id="question-prompt" tabindex="-1" class="serif prompt">{{ question().prompt }}</h2>
+        <p class="hint">{{ helpText() }}</p>
         @if (mode() === 'dropdown') {
-          <select class="dropdown" aria-label="Choose an answer" [disabled]="submitting() || conflict()" [value]="answers()[question().id]?.[0] ?? ''" (change)="dropdown($event)">
-            <option value="">Select an answer</option>
-            @for (option of question().options; track option.id) { <option [value]="option.id">{{ option.text }}</option> }
-          </select>
+          <div class="dropdown-wrap">
+            <select
+              class="dropdown dropdown-native"
+              aria-label="Choose an answer"
+              [disabled]="submitting() || conflict()"
+              [value]="answers()[question().id]?.[0] ?? ''"
+              (change)="dropdown($event)"
+            >
+              <option value="">Select an answer</option>
+              @for (option of question().options; track option.id) {
+                <option [value]="option.id">{{ option.text }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              class="dropdown-mobile-trigger"
+              aria-haspopup="listbox"
+              aria-controls="answer-options"
+              [attr.aria-expanded]="dropdownOpen()"
+              [disabled]="submitting() || conflict()"
+              (click)="openDropdown()"
+            >
+              <span>{{ selectedAnswerText() }}</span>
+              <app-icon name="chevron" [size]="18" />
+            </button>
+          </div>
+          @if (dropdownOpen()) {
+            <div class="dropdown-sheet-backdrop" aria-hidden="true" (click)="closeDropdown()"></div>
+            <div
+              #dropdownSheet
+              id="answer-options"
+              class="dropdown-sheet"
+              role="listbox"
+              aria-label="Choose an answer"
+              tabindex="-1"
+              (keydown.escape)="closeDropdown()"
+            >
+              <span class="sheet-handle" aria-hidden="true"></span>
+              <h3>Choose an answer</h3>
+              @for (option of question().options; track option.id) {
+                <button
+                  type="button"
+                  class="sheet-option"
+                  role="option"
+                  [attr.aria-selected]="selected(option.id)"
+                  (click)="chooseDropdown(option.id)"
+                >
+                  <span>{{ option.text }}</span>
+                  @if (selected(option.id)) {
+                    <app-icon name="check-green" [size]="18" />
+                  }
+                </button>
+              }
+              <button type="button" class="sheet-cancel" (click)="closeDropdown()">Cancel</button>
+            </div>
+          }
         } @else {
-          <div class="answers" [attr.role]="mode() === 'single' ? 'radiogroup' : 'group'" [attr.aria-label]="question().prompt">
+          <div
+            class="answers"
+            [attr.role]="mode() === 'single' ? 'radiogroup' : 'group'"
+            [attr.aria-label]="question().prompt"
+          >
             @for (option of question().options; track option.id) {
-              <label class="answer" [class.selected]="selected(option.id)"><input [type]="mode() === 'multi' ? 'checkbox' : 'radio'" [name]="question().id" [value]="option.id" [checked]="selected(option.id)" [disabled]="submitting() || conflict()" (change)="select(option.id, $event)" /><span>{{ option.text }}</span></label>
+              <label class="answer" [class.selected]="selected(option.id)"
+                ><input
+                  [type]="mode() === 'multi' ? 'checkbox' : 'radio'"
+                  [name]="question().id"
+                  [value]="option.id"
+                  [checked]="selected(option.id)"
+                  [disabled]="submitting() || conflict()"
+                  (change)="select(option.id, $event)"
+                /><span>{{ option.text }}</span></label
+              >
             }
           </div>
         }
-        <div class="question-actions"><button class="button outline" type="button" (click)="goTo(index() - 1)" [disabled]="index() === 0 || submitting()">Previous</button><button class="button primary" type="button" (click)="goTo(index() + 1)" [disabled]="index() === total() - 1 || submitting()">Next</button></div>
+        <div class="question-actions">
+          <button
+            class="button outline"
+            type="button"
+            (click)="goTo(index() - 1)"
+            [disabled]="index() === 0 || submitting()"
+          >
+            Previous</button
+          ><button
+            class="button primary"
+            type="button"
+            (click)="advance()"
+            [disabled]="submitting() || (isLastQuestion() && !canSubmit())"
+          >
+            {{ isLastQuestion() ? 'Submit' : 'Next' }}
+          </button>
+        </div>
       </section>
-      <aside class="side-cards" aria-label="Quiz progress"><section class="panel navigator"><h2>Your progress</h2>
-        <div class="tiles">@for (q of questions(); track q.id; let i = $index) { <button type="button" class="tile" [class.done]="answers()[q.id]?.length" [class.current]="index() === i" [attr.aria-current]="index() === i ? 'step' : null" [attr.aria-label]="'Question ' + (i + 1) + (answers()[q.id]?.length ? ', answered' : ', unanswered')" (click)="goTo(i)" [disabled]="submitting()">{{ i + 1 }}</button> }</div>
-        <p role="status" aria-live="polite">{{ saveState() === 'saving' ? 'Saving�' : saveState() === 'saved' ? 'Progress saved' : saveState() === 'failed' ? 'Save failed' : 'Unsaved changes' }}</p>
-        <button class="button outline" type="button" (click)="save()" [disabled]="submitting() || conflict() || saveState() === 'saving'">Save progress</button>
-        <p>{{ completedCount() }} of {{ total() }} answered. Answer every question to submit.</p>
-        <button class="button primary" type="button" (click)="submit()" [disabled]="submitting() || conflict() || completedCount() !== total()">{{ submitting() ? 'Submitting�' : 'Submit quiz' }}</button>
-      </section></aside>
+      <aside class="side-cards" aria-label="Quiz progress">
+        <section class="panel navigator">
+          <h2>Your progress</h2>
+          <div class="tiles">
+            @for (q of questions(); track q.id; let i = $index) {
+              <button
+                type="button"
+                class="tile"
+                [class.done]="answers()[q.id]?.length"
+                [class.current]="index() === i"
+                [attr.aria-current]="index() === i ? 'step' : null"
+                [attr.aria-label]="
+                  'Question ' + (i + 1) + (answers()[q.id]?.length ? ', answered' : ', unanswered')
+                "
+                (click)="goTo(i)"
+                [disabled]="submitting()"
+              >
+                {{ i + 1 }}
+              </button>
+            }
+          </div>
+          <p>
+            {{ completedCount() }} of {{ total() }} answered. You can submit anytime from the last
+            question.
+          </p>
+        </section>
+      </aside>
     </div>
   }
 </main>

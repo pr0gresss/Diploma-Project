@@ -142,7 +142,7 @@ button {
   width: 8px;
   height: 8px;
   border-radius: 3px;
-  background: #5d9874;
+  background: var(--marker-green);
   flex: 0 0 auto;
 }
 
@@ -152,17 +152,6 @@ button {
   margin: 19px 8px 0;
   border: 1px solid var(--border-alt);
   font-size: 12px;
-}
-
-.account {
-  height: 42px;
-  margin-top: auto;
-  padding: 0 14px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  color: var(--muted-alt);
-  font-size: 13px;
 }
 
 .bottom-nav {

@@ -1,9 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription, tap } from 'rxjs';
 
 import { SidePanelNav, SidePanelTab, SidePanelWorkspace } from '../components/side-panel.component';
+import { Workspace } from '../services/api.models';
 import { toWorkspaceSummary } from '../services/adapters';
+import type { HeaderSearchResult } from '../services/header-search.service';
+import { HeaderSearchService } from '../services/header-search.service';
 import { WorkspacesService } from '../services/workspaces.service';
 
 export type PlatformSection = 'workspace' | 'notes' | 'quizzes' | 'runner';
@@ -11,12 +14,13 @@ export type PlatformSection = 'workspace' | 'notes' | 'quizzes' | 'runner';
 const EMPTY_WORKSPACE: SidePanelWorkspace = {
   id: '',
   name: 'No workspace',
-  marker: '#8aa793',
+  marker: 'var(--marker-sage)',
 };
 
 @Injectable({ providedIn: 'root' })
 export class PlatformState {
   private readonly workspacesService = inject(WorkspacesService);
+  private readonly headerSearch = inject(HeaderSearchService);
   private readonly router = inject(Router);
   private workspaceRequest?: Subscription;
 
@@ -27,14 +31,17 @@ export class PlatformState {
 
   readonly activeNav = signal<SidePanelNav>('workspaces');
   readonly activeTab = signal<SidePanelTab>('files');
-  readonly headerQuery = signal('');
   readonly searchOpen = signal(false);
   readonly mobileMenuOpen = signal(false);
 
   setSection(section: PlatformSection): void {
     this.section.set(section);
     this.activeTab.set(
-      section === 'notes' ? 'notes' : section === 'quizzes' || section === 'runner' ? 'quizzes' : 'files',
+      section === 'notes'
+        ? 'notes'
+        : section === 'quizzes' || section === 'runner'
+          ? 'quizzes'
+          : 'files',
     );
     this.activeNav.set(
       section === 'workspace' ? 'workspaces' : section === 'notes' ? 'notes' : 'quizzes',
@@ -93,6 +100,31 @@ export class PlatformState {
     });
   }
 
+  renameWorkspace(workspaceId: string, name: string): Observable<Workspace> {
+    return this.workspacesService.renameWorkspace(workspaceId, name).pipe(
+      tap((workspace) => {
+        const renamed = toWorkspaceSummary(workspace);
+        this.workspaces.update((list) =>
+          list.map((item) => (item.id === renamed.id ? renamed : item)),
+        );
+        if (this.selectedWorkspace().id === renamed.id) {
+          this.selectedWorkspace.set(renamed);
+        }
+      }),
+    );
+  }
+
+  deleteWorkspace(workspaceId: string): Observable<void> {
+    return this.workspacesService.deleteWorkspace(workspaceId).pipe(
+      tap(() => {
+        this.workspaces.update((list) => list.filter((item) => item.id !== workspaceId));
+        if (this.selectedWorkspace().id === workspaceId) {
+          this.clearWorkspaceSelection();
+        }
+      }),
+    );
+  }
+
   setNav(section: SidePanelNav): void {
     this.activeNav.set(section);
     this.mobileMenuOpen.set(false);
@@ -103,16 +135,19 @@ export class PlatformState {
     this.mobileMenuOpen.set(false);
   }
 
-  onHeaderQuery(value: string): void {
-    this.headerQuery.set(value);
-  }
-
-  clearQuery(): void {
-    this.headerQuery.set('');
+  clearHeaderSearch(): void {
+    this.headerSearch.clearQuery();
   }
 
   toggleSearch(): void {
     this.searchOpen.update((open) => !open);
+  }
+
+  openSearchResult(result: HeaderSearchResult): void {
+    this.searchOpen.set(false);
+    this.clearHeaderSearch();
+    if (result.workspaceId) this.selectWorkspaceById(result.workspaceId);
+    void this.router.navigate([result.route], { queryParams: result.queryParams });
   }
 
   toggleMenu(): void {
@@ -130,7 +165,7 @@ export class PlatformState {
     this.loadingWorkspaces.set(false);
     this.activeNav.set('workspaces');
     this.activeTab.set('files');
-    this.headerQuery.set('');
+    this.headerSearch.reset();
     this.searchOpen.set(false);
     this.mobileMenuOpen.set(false);
   }

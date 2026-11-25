@@ -151,7 +151,7 @@ export class QuizzesController {
   @HttpCode(204)
   @ApiEndpoint({
     id: 'deleteQuiz',
-    summary: 'Delete a quiz without submitted attempts',
+    summary: 'Delete a quiz and its submitted attempts',
     params: ['quizId'],
     status: 204,
     errors: [404, 409],

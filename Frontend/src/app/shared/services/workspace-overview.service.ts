@@ -8,6 +8,7 @@ import {
   QuizPage,
   StudyGuide,
   StudyGuidePage,
+  Workspace,
 } from './api.models';
 import { MaterialsService } from './materials.service';
 import { ProgressService } from './progress.service';
@@ -16,6 +17,7 @@ import { StudyGuidesService } from './study-guides.service';
 import { WorkspacesService } from './workspaces.service';
 
 export interface WorkspaceOverview {
+  workspaces: Workspace[];
   materials: Material[];
   guides: StudyGuide[];
   quizzes: Quiz[];
@@ -47,7 +49,7 @@ export class WorkspaceOverviewService {
         const progress$ = this.progress.getMyProgress({ limit: 100 });
 
         if (!workspaceIds.length) {
-          return this.withMaterialContent([], progress$);
+          return this.withMaterialContent([], progress$, workspacePage.items);
         }
 
         return forkJoin(
@@ -59,6 +61,7 @@ export class WorkspaceOverviewService {
             this.withMaterialContent(
               materialPages.flatMap((page) => page.items),
               progress$,
+              workspacePage.items,
             ),
           ),
         );
@@ -69,6 +72,7 @@ export class WorkspaceOverviewService {
   private withMaterialContent(
     materials: Material[],
     progress$: Observable<ProgressReport>,
+    workspaces: Workspace[] = [],
   ): Observable<WorkspaceOverview> {
     const guidePages$: Observable<StudyGuidePage[]> = materials.length
       ? forkJoin(
@@ -87,6 +91,7 @@ export class WorkspaceOverviewService {
       progress: progress$,
     }).pipe(
       map(({ guidePages, quizPages, progress }) => ({
+        workspaces,
         materials,
         guides: guidePages.flatMap((page) => page.items).sort(byNewest),
         quizzes: quizPages.flatMap((page) => page.items).sort(byNewest),

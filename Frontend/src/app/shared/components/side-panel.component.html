@@ -1,14 +1,21 @@
 <div class="side-panel-root">
   <aside class="sidebar" [class.mobile-open]="mobileMenuOpen()" aria-label="Workspace navigation">
     <div class="brand-row">
-      <a class="brand" routerLink="/workspaces" (click)="navSelect.emit('workspaces')" aria-label="AI study workspace home">
+      <a
+        class="brand"
+        routerLink="/workspaces"
+        (click)="navSelect.emit('workspaces')"
+        aria-label="AI study workspace home"
+      >
         <span class="brand-tile"><app-icon name="book" [size]="20" /></span>
         <span class="brand-text">
           <span class="brand-name">ai study</span>
           <span class="brand-sub">workspace</span>
         </span>
       </a>
-      <button type="button" class="close-menu" aria-label="Close menu" (click)="menuClose.emit()">✕</button>
+      <button type="button" class="close-menu" aria-label="Close menu" (click)="menuClose.emit()">
+        ✕
+      </button>
     </div>
 
     <nav class="side-nav" aria-label="Workspace sections">
@@ -40,7 +47,12 @@
 
     <div class="section-label">
       <span>YOUR WORKSPACES</span>
-      <button type="button" class="bare-btn" aria-label="Add workspace" (click)="openCreateDialog()">
+      <button
+        type="button"
+        class="bare-btn"
+        aria-label="Add workspace"
+        (click)="openCreateDialog()"
+      >
         <app-icon name="plus" [size]="14" />
       </button>
     </div>
@@ -59,14 +71,14 @@
       }
     </nav>
 
-    <button type="button" class="new-workspace" aria-label="New workspace" (click)="openCreateDialog()">
+    <button
+      type="button"
+      class="new-workspace"
+      aria-label="New workspace"
+      (click)="openCreateDialog()"
+    >
       <app-icon name="plus-small" [size]="17" /><span class="nav-label">New workspace</span>
     </button>
-
-    <div class="account">
-      <app-icon name="settings" [size]="19" />
-      <span class="nav-label">Settings</span>
-    </div>
   </aside>
 
   <nav class="bottom-nav" aria-label="Mobile navigation">

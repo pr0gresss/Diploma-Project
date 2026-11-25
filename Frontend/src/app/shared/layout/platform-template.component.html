@@ -13,7 +13,12 @@
   />
 
   @if (state.mobileMenuOpen()) {
-    <button type="button" class="sidebar-backdrop" aria-label="Close menu" (click)="state.closeMenu()"></button>
+    <button
+      type="button"
+      class="sidebar-backdrop"
+      aria-label="Close menu"
+      (click)="state.closeMenu()"
+    ></button>
   }
 
   <div class="platform-main">
@@ -21,13 +26,12 @@
       [section]="state.section()"
       [currentLabel]="state.selectedWorkspace().name"
       [currentWorkspaceId]="state.selectedWorkspace().id"
-      [query]="state.headerQuery()"
       [searchOpen]="state.searchOpen()"
       [userEmail]="auth.user()?.email ?? ''"
       [workspaces]="state.workspaces()"
       [selectedWorkspaceId]="state.selectedWorkspace().id"
-      (queryChange)="state.onHeaderQuery($event)"
       (searchToggle)="state.toggleSearch()"
+      (searchResult)="state.openSearchResult($event)"
       (menuToggle)="state.toggleMenu()"
       (workspaceSelect)="openWorkspace($event)"
       (signOut)="signOut()"

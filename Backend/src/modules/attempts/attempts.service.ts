@@ -75,13 +75,12 @@ export class AttemptsService {
           : []);
       if (
         !Array.isArray(ids) ||
-        !ids.length ||
         ids.length > 10 ||
         ids.some((id) => typeof id !== 'string') ||
         new Set(ids).size !== ids.length
       ) {
         throw new ValidationError(
-          'Select between 1 and 10 distinct options per question',
+          'Select up to 10 distinct options per question',
         );
       }
       if (!questionIds.has(answer.questionId))
@@ -94,14 +93,12 @@ export class AttemptsService {
         );
       byQuestion.set(answer.questionId, ids);
     }
-    if (byQuestion.size !== quiz.questions.length)
-      throw new ValidationError('Every question must be answered exactly once');
     const feedback = quiz.questions.map((question) => {
-      const ids = byQuestion.get(question.id)!;
+      const ids = byQuestion.get(question.id) ?? [];
       const questionType = question.questionType ?? 'SINGLE_CHOICE';
-      if (questionType !== 'MULTI_SELECT' && ids.length !== 1) {
+      if (questionType !== 'MULTI_SELECT' && ids.length > 1) {
         throw new ValidationError(
-          `Question ${question.position} accepts exactly one selected option`,
+          `Question ${question.position} accepts at most one selected option`,
         );
       }
       if (
@@ -135,12 +132,14 @@ export class AttemptsService {
         quizId,
         totalQuestions: quiz.questions.length,
         correctAnswers: feedback.filter((answer) => answer.isCorrect).length,
-        answers: feedback.map((answer) => ({
-          questionId: answer.questionId,
-          selectedOptionId: answer.selectedOptionIds[0],
-          selectedOptionIds: answer.selectedOptionIds,
-          isCorrect: answer.isCorrect,
-        })),
+        answers: feedback
+          .filter((answer) => answer.selectedOptionIds.length > 0)
+          .map((answer) => ({
+            questionId: answer.questionId,
+            selectedOptionId: answer.selectedOptionIds[0],
+            selectedOptionIds: answer.selectedOptionIds,
+            isCorrect: answer.isCorrect,
+          })),
       },
       ...(tx ? [tx] : []),
     );
@@ -193,10 +192,24 @@ export class AttemptsService {
   }
 
   private toAttemptResult(attempt: StoredAttempt): AttemptResult {
-    const { answers, ...summary } = attempt;
+    const { answers, quizQuestions, ...summary } = attempt;
+    const answersByQuestion = new Map(
+      answers.map((answer) => [answer.questionId, answer]),
+    );
+    const merged = quizQuestions.map(
+      (question) =>
+        answersByQuestion.get(question.id) ?? {
+          questionId: question.id,
+          selectedOptionId: null,
+          isCorrect: false,
+          question,
+          option: null,
+          selections: [],
+        },
+    );
     return {
       ...summary,
-      answers: [...answers]
+      answers: merged
         .sort((a, b) => a.question.position - b.question.position)
         .map((answer) => {
           const correct = answer.question.options.filter(
@@ -211,12 +224,14 @@ export class AttemptsService {
                 id: selection.selectedOptionId,
                 optionText: selection.option.optionText,
               }))
-            : [
-                {
-                  id: answer.selectedOptionId,
-                  optionText: answer.option.optionText,
-                },
-              ];
+            : answer.selectedOptionId && answer.option
+              ? [
+                  {
+                    id: answer.selectedOptionId,
+                    optionText: answer.option.optionText,
+                  },
+                ]
+              : [];
           return answerResult({
             questionId: answer.questionId,
             questionType: answer.question.questionType ?? 'SINGLE_CHOICE',
@@ -250,8 +265,8 @@ function answerResult(input: {
     selectedOptionTexts: selected.map((option) => option.optionText),
     correctOptionIds: correct.map((option) => option.id),
     correctOptionTexts: correct.map((option) => option.optionText),
-    selectedOptionId: single ? selected[0].id : null,
-    selectedOptionText: single ? selected[0].optionText : null,
+    selectedOptionId: single ? (selected[0]?.id ?? null) : null,
+    selectedOptionText: single ? (selected[0]?.optionText ?? null) : null,
     correctOptionId: single ? correct[0].id : null,
     correctOptionText: single ? correct[0].optionText : null,
   };

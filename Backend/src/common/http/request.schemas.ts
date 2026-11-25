@@ -72,7 +72,7 @@ export const attemptInputSchema = z.strictObject({
               'Legacy single-selection field. Prefer selectedOptionIds; do not supply both.',
             )
             .optional(),
-          selectedOptionIds: z.array(uuidSchema).min(1).max(10).optional(),
+          selectedOptionIds: z.array(uuidSchema).max(10).optional(),
         })
         .refine(
           (value) =>
@@ -81,7 +81,6 @@ export const attemptInputSchema = z.strictObject({
           'Supply selectedOptionIds or legacy selectedOptionId, not both',
         ),
     )
-    .min(1)
     .max(100),
 });
 export type ListQuery = z.infer<typeof pageSchema>;

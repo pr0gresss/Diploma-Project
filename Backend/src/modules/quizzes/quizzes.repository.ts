@@ -358,14 +358,22 @@ export class QuizzesRepository {
 
   async delete(quizId: string): Promise<void> {
     try {
-      await this.prisma.quiz.delete({
-        where: { id: quizId },
-        select: { id: true },
+      await this.prisma.$transaction(async (transaction) => {
+        // Drafts reference attempts with Restrict, so remove them first.
+        await transaction.quizDraft.deleteMany({ where: { quizId } });
+        // Attempt answers reference quiz questions with Restrict, so remove
+        // attempts before the questions cascade away with the quiz.
+        await transaction.quizAttempt.deleteMany({ where: { quizId } });
+        await transaction.quiz.delete({
+          where: { id: quizId },
+          select: { id: true },
+        });
       });
     } catch (error) {
       return rethrowPrismaError(error, {
         notFound: 'Quiz not found',
-        conflict: 'The quiz has assessment history and cannot be deleted',
+        conflict:
+          'The quiz could not be deleted because it is still referenced',
       });
     }
   }

@@ -1,0 +1,36 @@
+<div class="dialog-backdrop" (click)="cancel.emit()"></div>
+
+<div
+  class="dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="delete-file-title"
+  aria-describedby="delete-file-copy"
+  (keydown.escape)="cancel.emit()"
+>
+  <p class="eyebrow">DANGER ZONE</p>
+  <h2 id="delete-file-title" class="serif">Delete file?</h2>
+  <p id="delete-file-copy" class="dialog-copy">
+    This permanently deletes <strong>{{ fileName() || 'this file' }}</strong> and its notes and
+    quizzes. This action cannot be undone.
+  </p>
+
+  @if (error()) {
+    <p class="form-error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="dialog-actions">
+    <button
+      #cancelButton
+      type="button"
+      class="btn secondary"
+      [disabled]="deleting()"
+      (click)="cancel.emit()"
+    >
+      Cancel
+    </button>
+    <button type="button" class="btn danger" [disabled]="deleting()" (click)="confirm.emit()">
+      {{ deleting() ? 'Deleting…' : 'Delete file' }}
+    </button>
+  </div>
+</div>

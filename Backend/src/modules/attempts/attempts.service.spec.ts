@@ -81,9 +81,28 @@ describe('AttemptsService', () => {
     },
   );
 
+  it.each([
+    { answers: [] },
+    { answers: [{ questionId: 'question', selectedOptionIds: [] }] },
+  ])(
+    'grades unanswered questions as incorrect: $answers',
+    async ({ answers }) => {
+      const result = await service.submit('user', 'quiz', { answers });
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ correctAnswers: 0, answers: [] }),
+      );
+      expect(result.answers[0]).toMatchObject({
+        questionId: 'question',
+        isCorrect: false,
+        selectedOptionIds: [],
+        selectedOptionId: null,
+        correctOptionId: 'correct',
+      });
+    },
+  );
+
   it.each(
     [
-      [],
       [{ questionId: 'other', selectedOptionId: 'correct' }],
       [{ questionId: 'question', selectedOptionId: 'other' }],
       [
@@ -173,6 +192,7 @@ describe('AttemptsService', () => {
       totalQuestions: 1,
       correctAnswers: 0,
       scorePercent: 0,
+      quizQuestions: quiz.questions,
       answers: [
         {
           questionId: 'question',

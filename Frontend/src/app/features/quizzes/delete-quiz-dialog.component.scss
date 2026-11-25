@@ -1,0 +1,6 @@
+@use '../../shared/components/dialog';
+
+.dialog-copy strong {
+  color: var(--ink);
+  font-weight: 600;
+}

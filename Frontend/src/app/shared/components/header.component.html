@@ -1,15 +1,36 @@
 <div class="header-root">
+  @if (searchOpen()) {
+    <button
+      type="button"
+      class="search-backdrop"
+      aria-label="Close search"
+      (click)="closeSearch()"
+    ></button>
+  }
+
+  @if (accountMenuOpen()) {
+    <button
+      type="button"
+      class="account-menu-backdrop"
+      aria-label="Close account menu"
+      (click)="closeAccountMenu()"
+    ></button>
+  }
+
   <header class="topbar">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       @if (isGeneralSection()) {
-        <a class="crumb-current" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+        <a class="crumb-current" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{
+          sectionLabel()
+        }}</a>
       } @else {
         <a
           class="crumb-muted"
           routerLink="/workspaces"
           routerLinkActive="crumb-active"
           [routerLinkActiveOptions]="{ exact: true }"
-        >Workspaces</a>
+          >Workspaces</a
+        >
         @if (currentWorkspaceId()) {
           <app-icon name="chevron-small" [size]="13" />
           <a
@@ -17,104 +38,202 @@
             [routerLink]="workspaceLink()"
             routerLinkActive="crumb-active"
             [routerLinkActiveOptions]="{ exact: true }"
-          >{{ currentLabel() }}</a>
+            >{{ currentLabel() }}</a
+          >
         }
         @if (sectionLabel()) {
           <app-icon name="chevron-small" [size]="13" />
-          <a class="crumb-page" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+          <a class="crumb-page" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{
+            sectionLabel()
+          }}</a>
         }
       }
     </nav>
 
     <div class="tablet-crumb">
       @if (isGeneralSection()) {
-        <a class="crumb-current" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
+        <a class="crumb-current" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{
+          sectionLabel()
+        }}</a>
       } @else {
         <a
           class="crumb-muted"
           routerLink="/workspaces"
           routerLinkActive="crumb-active"
           [routerLinkActiveOptions]="{ exact: true }"
-        >Workspaces</a>
+          >Workspaces</a
+        >
         @if (currentWorkspaceId()) {
           <app-icon name="chevron-small" [size]="13" />
           <div class="workspace-switcher-wrap">
-          <button
-            type="button"
-            class="workspace-switcher"
-            aria-haspopup="menu"
-            [attr.aria-expanded]="workspaceMenuOpen()"
-            (click)="toggleWorkspaceMenu()"
-          >
-            {{ currentLabel() }}
-            <img src="/icons/down.svg" width="14" height="14" alt="" aria-hidden="true" />
-          </button>
+            <button
+              type="button"
+              class="workspace-switcher"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="workspaceMenuOpen()"
+              (click)="toggleWorkspaceMenu()"
+            >
+              {{ currentLabel() }}
+              <img src="/icons/down.svg" width="14" height="14" alt="" aria-hidden="true" />
+            </button>
 
-          @if (workspaceMenuOpen()) {
-            <div class="workspace-menu" role="menu" aria-label="Switch workspace">
-              @for (workspace of workspaces(); track workspace.id) {
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="workspace-menu-item"
-                  [class.active]="selectedWorkspaceId() === workspace.id"
-                  (click)="selectWorkspace(workspace)"
-                >
-                  <span class="menu-marker" [style.background]="workspace.marker"></span>
-                  <span class="menu-name">{{ workspace.name }}</span>
-                </button>
-              } @empty {
-                <p class="workspace-menu-empty">No workspaces yet</p>
-              }
-            </div>
-          }
-        </div>
-      }
-      @if (sectionLabel()) {
-        <app-icon name="chevron-small" [size]="13" />
-        <a class="crumb-page" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{ sectionLabel() }}</a>
-      }
+            @if (workspaceMenuOpen()) {
+              <div class="workspace-menu" role="menu" aria-label="Switch workspace">
+                @for (workspace of workspaces(); track workspace.id) {
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="workspace-menu-item"
+                    [class.active]="selectedWorkspaceId() === workspace.id"
+                    (click)="selectWorkspace(workspace)"
+                  >
+                    <span class="menu-marker" [style.background]="workspace.marker"></span>
+                    <span class="menu-name">{{ workspace.name }}</span>
+                  </button>
+                } @empty {
+                  <p class="workspace-menu-empty">No workspaces yet</p>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (sectionLabel()) {
+          <app-icon name="chevron-small" [size]="13" />
+          <a class="crumb-page" [routerLink]="sectionLink()" routerLinkActive="crumb-active">{{
+            sectionLabel()
+          }}</a>
+        }
       }
     </div>
 
     <div class="header-actions">
-      <label class="header-search">
+      <div class="header-search">
         <app-icon name="search" [size]="16" />
         <input
           type="search"
-          [value]="query()"
+          [value]="search.draftQuery()"
           (input)="onQueryInput($event)"
+          (keydown.enter)="submitSearch()"
+          (keydown.escape)="closeSearch()"
           placeholder="Search anything..."
           aria-label="Search"
         />
-      </label>
-      <button type="button" class="icon-btn tablet-search" aria-label="Search" (click)="searchToggle.emit()">
-        <app-icon name="search" [size]="21" />
-      </button>
-      <button type="button" class="icon-btn help-btn" aria-label="Help">
-        <app-icon name="help" [size]="21" />
-      </button>
+        @if (search.draftQuery().trim()) {
+          <button
+            type="button"
+            class="search-submit"
+            aria-label="Run search"
+            title="Search"
+            (click)="submitSearch()"
+          >
+            <app-icon name="arrow" [size]="14" />
+          </button>
+        }
+      </div>
       <button
         type="button"
-        class="account-btn"
-        [attr.title]="userEmail() ? 'Sign out ' + userEmail() : 'Sign out'"
-        aria-label="Sign out"
-        (click)="signOut.emit()"
+        class="icon-btn tablet-search"
+        [class.active]="searchOpen()"
+        aria-label="Search"
+        [attr.aria-expanded]="searchOpen()"
+        (click)="onHeaderSearchButton()"
       >
-        {{ userInitial() }}
+        <app-icon name="search" [size]="21" />
       </button>
+      <div class="account-wrap">
+        <button
+          type="button"
+          class="account-btn"
+          [attr.title]="userEmail() ? 'Account options for ' + userEmail() : 'Account options'"
+          aria-label="Account options"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="accountMenuOpen()"
+          (click)="toggleAccountMenu()"
+        >
+          {{ userInitial() }}
+        </button>
+        @if (accountMenuOpen()) {
+          <div
+            class="account-menu"
+            role="menu"
+            aria-label="Account options"
+            (keydown.escape)="closeAccountMenu()"
+          >
+            @if (userEmail()) {
+              <p class="account-email">{{ userEmail() }}</p>
+            }
+            <button
+              type="button"
+              role="menuitem"
+              class="account-menu-item"
+              (click)="requestLogout()"
+            >
+              <svg
+                class="logout-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Log out</span>
+            </button>
+          </div>
+        }
+      </div>
     </div>
   </header>
 
   @if (searchOpen()) {
+    <div class="desktop-search-results">
+      <app-header-search-results
+        [query]="search.query()"
+        [results]="search.results()"
+        [loading]="search.loading()"
+        [pending]="search.pending()"
+        (select)="selectSearchResult($event)"
+      />
+    </div>
+
     <div class="header-search-pop">
       <app-icon name="search" [size]="16" />
       <input
+        #tabletSearchInput
         type="search"
-        [value]="query()"
+        [value]="search.draftQuery()"
         (input)="onQueryInput($event)"
+        (keydown.enter)="submitSearch()"
+        (keydown.escape)="closeSearch()"
         placeholder="Search anything..."
         aria-label="Search"
+      />
+      @if (search.draftQuery().trim()) {
+        <button
+          type="button"
+          class="search-submit"
+          aria-label="Run search"
+          title="Search"
+          (click)="submitSearch()"
+        >
+          <app-icon name="arrow" [size]="14" />
+        </button>
+      }
+    </div>
+
+    <div class="tablet-search-results">
+      <app-header-search-results
+        [query]="search.query()"
+        [results]="search.results()"
+        [loading]="search.loading()"
+        [pending]="search.pending()"
+        (select)="selectSearchResult($event)"
       />
     </div>
   }
@@ -130,13 +249,22 @@
     <button
       type="button"
       class="account-btn"
-      [attr.title]="userEmail() ? 'Sign out ' + userEmail() : 'Sign out'"
-      aria-label="Sign out"
-      (click)="signOut.emit()"
+      [attr.title]="userEmail() ? 'Account options for ' + userEmail() : 'Account options'"
+      aria-label="Account options"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="accountMenuOpen()"
+      (click)="toggleAccountMenu()"
     >
       {{ userInitial() }}
     </button>
-    <button type="button" class="bare-btn" aria-label="Search" (click)="searchToggle.emit()">
+    <button
+      type="button"
+      class="bare-btn mobile-search-btn"
+      [class.active]="searchOpen()"
+      aria-label="Search"
+      [attr.aria-expanded]="searchOpen()"
+      (click)="onHeaderSearchButton()"
+    >
       <app-icon name="search" [size]="20" />
     </button>
     <button type="button" class="bare-btn" aria-label="Open menu" (click)="menuToggle.emit()">
@@ -148,17 +276,74 @@
     <div class="mobile-search">
       <app-icon name="search" [size]="16" />
       <input
+        #mobileSearchInput
         type="search"
-        [value]="query()"
+        [value]="search.draftQuery()"
         (input)="onQueryInput($event)"
+        (keydown.enter)="submitSearch()"
+        (keydown.escape)="closeSearch()"
         placeholder="Search anything..."
         aria-label="Search"
+      />
+      @if (search.draftQuery().trim()) {
+        <button
+          type="button"
+          class="search-submit"
+          aria-label="Run search"
+          title="Search"
+          (click)="submitSearch()"
+        >
+          <app-icon name="arrow" [size]="14" />
+        </button>
+      }
+    </div>
+
+    <div class="mobile-search-results">
+      <app-header-search-results
+        [query]="search.query()"
+        [results]="search.results()"
+        [loading]="search.loading()"
+        [pending]="search.pending()"
+        (select)="selectSearchResult($event)"
       />
     </div>
   }
 
+  @if (accountMenuOpen()) {
+    <div
+      class="account-sheet"
+      role="menu"
+      aria-label="Account options"
+      (keydown.escape)="closeAccountMenu()"
+    >
+      @if (userEmail()) {
+        <p class="account-email">{{ userEmail() }}</p>
+      }
+      <button type="button" role="menuitem" class="account-menu-item" (click)="requestLogout()">
+        <svg
+          class="logout-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        <span>Log out</span>
+      </button>
+    </div>
+  }
+
   <header class="mobile-subbar">
-    <span class="crumb-current">{{ isGeneralSection() ? sectionLabel() : (currentWorkspaceId() ? currentLabel() : 'Workspaces') }}</span>
+    <span class="crumb-current">{{
+      isGeneralSection() ? sectionLabel() : currentWorkspaceId() ? currentLabel() : 'Workspaces'
+    }}</span>
     @if (!isGeneralSection() && currentWorkspaceId()) {
       <app-icon name="chevron-activity" [size]="14" />
       <span class="subbar-view">{{ sectionLabel() || 'Files' }}</span>
@@ -172,5 +357,13 @@
       aria-label="Close workspace menu"
       (click)="closeWorkspaceMenu()"
     ></button>
+  }
+
+  @if (logoutDialogOpen()) {
+    <app-logout-dialog
+      [email]="userEmail()"
+      (confirm)="confirmLogout()"
+      (cancel)="cancelLogout()"
+    />
   }
 </div>

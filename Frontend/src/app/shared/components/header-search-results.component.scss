@@ -1,0 +1,152 @@
+:host {
+  display: block;
+}
+
+.results {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 8px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.results-label {
+  padding: 8px 10px 6px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+}
+
+.results-state {
+  padding: 24px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.results-state.empty {
+  color: var(--muted-strong);
+}
+
+.result {
+  width: 100%;
+  min-height: 54px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--ink-shadow-xs);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.result:last-child {
+  margin-bottom: 0;
+}
+
+.result:hover {
+  border-color: var(--brand-border);
+  background: var(--surface-selected);
+}
+
+.result:active {
+  border-color: var(--brand-border-strong);
+  background: var(--brand-soft);
+  transform: translateY(1px);
+}
+
+.result:focus-visible {
+  outline: 2px solid var(--brand-border-strong);
+  outline-offset: 1px;
+}
+
+.result-icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.result-icon-workspace {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.result-icon-material {
+  background: var(--surface-tint);
+  color: var(--muted-strong);
+}
+
+.result-icon-note {
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+}
+
+.result-icon-quiz {
+  background: var(--brand-card);
+  color: var(--brand-deep);
+}
+
+.result-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.result-text strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-text small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-arrow {
+  flex: none;
+  color: var(--muted-alt);
+  opacity: 0;
+  transform: translateX(-2px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.result:hover .result-arrow,
+.result:focus-visible .result-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result,
+  .result-arrow {
+    transition: none;
+  }
+}

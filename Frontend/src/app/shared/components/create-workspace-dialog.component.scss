@@ -17,7 +17,7 @@ button {
   inset: 0;
   border: 0;
   padding: 0;
-  background: #262a2866;
+  background: var(--scrim);
 }
 
 .dialog {
@@ -27,7 +27,7 @@ button {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface-raised);
-  box-shadow: 0 18px 50px #262a2826;
+  box-shadow: 0 18px 50px var(--ink-shadow-xl);
 }
 
 .eyebrow {
@@ -80,7 +80,7 @@ form {
 }
 
 .field input.invalid {
-  border-color: #c98a75;
+  border-color: var(--invalid-border);
 }
 
 .field-hint,
@@ -119,5 +119,5 @@ form {
 
 .btn.primary {
   background: var(--brand);
-  color: #fff;
+  color: var(--on-dark);
 }

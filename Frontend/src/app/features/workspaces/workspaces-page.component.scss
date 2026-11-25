@@ -46,7 +46,7 @@ h1 {
   padding: 0 15px;
   border-radius: 8px;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-dark);
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -77,7 +77,7 @@ h1 {
 
 .workspace-card:hover {
   border-color: var(--brand);
-  box-shadow: 0 6px 18px rgba(38, 115, 77, 0.08);
+  box-shadow: 0 6px 18px var(--brand-shadow);
 }
 
 .card-marker {
@@ -159,6 +159,47 @@ h1 {
   }
 
   .workspace-cards {
-    grid-template-columns: 1fr;
+    margin-top: 20px;
+    display: block;
+  }
+
+  .workspace-card {
+    min-height: 66px;
+    margin-bottom: 8px;
+    padding: 0 12px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .workspace-card:active {
+    background: var(--surface-soft);
+  }
+
+  .card-marker {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    flex: none;
+  }
+
+  .card-body {
+    flex: 1;
+  }
+
+  .card-name {
+    font-size: 13px;
+  }
+
+  .card-caption {
+    font-size: 10px;
+  }
+
+  .card-action {
+    margin-top: 0;
+    font-size: 0;
+    gap: 0;
   }
 }

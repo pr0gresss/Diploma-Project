@@ -12,7 +12,7 @@
 .auth-intro {
   padding: 40px 52px;
   background: var(--brand-deep);
-  color: #fff;
+  color: var(--on-dark);
   display: flex;
   flex-direction: column;
 }
@@ -28,7 +28,7 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: #ffffff26;
+  background: var(--on-dark-soft);
   display: grid;
   place-items: center;
 }
@@ -46,7 +46,7 @@
 
 .brand-sub {
   font-size: 12px;
-  color: #ffffffe6;
+  color: var(--on-dark-muted);
 }
 
 .intro-copy {
@@ -62,7 +62,7 @@
 }
 
 .auth-intro .eyebrow {
-  color: #ffffffe6;
+  color: var(--on-dark-muted);
 }
 
 .intro-copy h1 {
@@ -73,7 +73,7 @@
 
 .intro-copy p:last-child {
   margin-top: 18px;
-  color: #ffffff;
+  color: var(--on-dark) fff;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -91,7 +91,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface-raised);
-  box-shadow: 0 14px 40px #262a280a;
+  box-shadow: 0 14px 40px var(--ink-shadow-xs);
 }
 
 .auth-card h2 {
@@ -151,7 +151,7 @@ form {
 }
 
 .field input.invalid {
-  border-color: #c98a75;
+  border-color: var(--invalid-border);
 }
 
 .field-hint,
@@ -174,7 +174,7 @@ form {
   border: 0;
   border-radius: 8px;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-dark);
   font-size: 13px;
   font-weight: 600;
 }

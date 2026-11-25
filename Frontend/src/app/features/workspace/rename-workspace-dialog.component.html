@@ -1,0 +1,46 @@
+<div class="dialog-backdrop" (click)="cancel.emit()"></div>
+
+<div
+  class="dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="rename-workspace-title"
+  (keydown.escape)="cancel.emit()"
+>
+  <p class="eyebrow">WORKSPACE SETTINGS</p>
+  <h2 id="rename-workspace-title" class="serif">Rename workspace</h2>
+  <p class="dialog-copy">Choose a name that makes this workspace easy to find.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label class="field">
+      <span>Workspace name</span>
+      <input
+        #titleInput
+        type="text"
+        formControlName="name"
+        maxlength="80"
+        placeholder="e.g. Cell biology"
+        autocomplete="off"
+        [class.invalid]="nameError()"
+        [attr.aria-invalid]="nameError() ? 'true' : null"
+        [attr.aria-describedby]="nameError() ? 'rename-workspace-error' : 'rename-workspace-hint'"
+      />
+      @if (nameError()) {
+        <small class="field-error" id="rename-workspace-error">{{ nameError() }}</small>
+      } @else {
+        <small class="field-hint" id="rename-workspace-hint">Up to 80 characters.</small>
+      }
+    </label>
+
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="btn secondary" [disabled]="saving()" (click)="cancel.emit()">Cancel</button>
+      <button type="submit" class="btn primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save changes' }}
+      </button>
+    </div>
+  </form>
+</div>
